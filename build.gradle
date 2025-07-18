@@ -1,0 +1,70 @@
+plugins {
+    id 'java'
+}
+
+group = 'com.example'
+version = '1.0-SNAPSHOT'
+description = 'Spigot Plugin'
+
+repositories {
+    // 优先使用阿里云镜像
+    maven { 
+        url 'https://maven.aliyun.com/repository/public/' 
+        metadataSources {
+            mavenPom()
+            artifact()
+            ignoreGradleMetadataRedirection()
+        }
+    }
+    maven { 
+        url 'https://maven.aliyun.com/repository/central' 
+        metadataSources {
+            mavenPom()
+            artifact()
+            ignoreGradleMetadataRedirection()
+        }
+    }
+    
+    // 特殊仓库(Spigot/Paper)必须使用官方源
+    maven {
+        url 'https://hub.spigotmc.org/nexus/content/repositories/snapshots/'
+        content {
+            includeGroup 'org.spigotmc'
+        }
+    }
+    maven {
+        url 'https://papermc.io/repo/repository/maven-public/'
+        content {
+            includeGroup 'io.papermc'
+        }
+    }
+    
+    // 最后才尝试中央仓库
+    mavenCentral() {
+        metadataSources {
+            mavenPom()
+            artifact()
+            ignoreGradleMetadataRedirection()
+        }
+        // 限制中央仓库使用频率
+        onlyIf {
+            !System.getProperty('disableMavenCentral', 'false').toBoolean()
+        }
+    }
+}
+
+dependencies {
+    // Spigot API依赖
+    compileOnly 'org.spigotmc:spigot-api:1.19.4-R0.1-SNAPSHOT' // 可以根据需要更改版本
+    
+    // 其他依赖可以在这里添加
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
