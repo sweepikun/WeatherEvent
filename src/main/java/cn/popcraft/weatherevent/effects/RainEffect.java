@@ -30,7 +30,8 @@ public class RainEffect extends BaseWeatherEffect {
         
         // 设置默认命令
         if (getCommands().isEmpty() && isEnabled()) {
-            addCommand("title %player% subtitle {\"text\":\"感觉有点冷...\",\"color\":\"blue\"}");
+            addCommand("playsound minecraft:weather.rain master %player% ~ ~ ~ 100 1");
+            addCommand("tellraw %player% {\"text\":\"感觉有点冷...\",\"color\":\"blue\"}");
         }
     }
     

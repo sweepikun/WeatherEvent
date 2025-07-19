@@ -27,6 +27,20 @@ public class EffectManager implements Listener {
     private BukkitTask effectTask; // 效果更新任务
     private int updateInterval; // 更新间隔，单位为 tick
     
+    // 用于跟踪每个世界的天气状态
+    private final Map<String, WeatherState> worldWeatherStates;
+    
+    // 内部类，用于存储世界的天气状态
+    private static class WeatherState {
+        boolean isRaining;
+        boolean isThundering;
+        
+        WeatherState(boolean isRaining, boolean isThundering) {
+            this.isRaining = isRaining;
+            this.isThundering = isThundering;
+        }
+    }
+    
     /**
      * 创建一个效果管理器
      * @param plugin 插件实例
@@ -34,6 +48,7 @@ public class EffectManager implements Listener {
     public EffectManager(WeatherEvent plugin) {
         this.plugin = plugin;
         this.effects = new HashMap<>();
+        this.worldWeatherStates = new HashMap<>();
         this.updateInterval = 20; // 默认每秒更新一次
     }
     
@@ -55,6 +70,9 @@ public class EffectManager implements Listener {
         // 设置更新间隔
         updateInterval = plugin.getConfig().getInt("update-interval", 20);
         
+        // 初始化所有世界的天气状态
+        initializeWorldWeatherStates();
+        
         // 加载天气效果
         loadWeatherEffects(config);
         
@@ -65,6 +83,18 @@ public class EffectManager implements Listener {
         startEffectTask();
         
         plugin.getLogger().info("已加载 " + effects.size() + " 个效果");
+    }
+    
+    /**
+     * 初始化所有世界的天气状态
+     */
+    private void initializeWorldWeatherStates() {
+        worldWeatherStates.clear();
+        for (World world : Bukkit.getWorlds()) {
+            String worldName = world.getName();
+            worldWeatherStates.put(worldName, new WeatherState(world.hasStorm(), world.isThundering()));
+        }
+        plugin.getLogger().info("已初始化 " + worldWeatherStates.size() + " 个世界的天气状态");
     }
     
     /**
@@ -232,9 +262,14 @@ public class EffectManager implements Listener {
      * @param world 当前世界
      */
     private void executeWeatherCommands(Player player, World world) {
-        // 获取当前天气类型
-        boolean isRaining = world.hasStorm();
-        boolean isThundering = world.isThundering();
+        String worldName = world.getName();
+        
+        // 获取当前天气类型，优先使用缓存的状态
+        WeatherState state = worldWeatherStates.computeIfAbsent(
+            worldName, k -> new WeatherState(world.hasStorm(), world.isThundering())
+        );
+        boolean isRaining = state.isRaining;
+        boolean isThundering = state.isThundering;
         
         // 获取对应天气的配置
         ConfigurationSection weatherConfig = plugin.getConfig().getConfigurationSection("effects." + 
@@ -368,6 +403,15 @@ public class EffectManager implements Listener {
      */
     @EventHandler
     public void onWeatherChange(WeatherChangeEvent event) {
+        World world = event.getWorld();
+        String worldName = world.getName();
+        
+        // 更新世界天气状态
+        WeatherState state = worldWeatherStates.computeIfAbsent(
+            worldName, k -> new WeatherState(world.hasStorm(), world.isThundering())
+        );
+        state.isRaining = event.toWeatherState(); // 更新为新的雨天状态
+        
         // 天气改变时，更新效果
         updateEffects();
     }
@@ -377,6 +421,15 @@ public class EffectManager implements Listener {
      */
     @EventHandler
     public void onThunderChange(ThunderChangeEvent event) {
+        World world = event.getWorld();
+        String worldName = world.getName();
+        
+        // 更新世界天气状态
+        WeatherState state = worldWeatherStates.computeIfAbsent(
+            worldName, k -> new WeatherState(world.hasStorm(), world.isThundering())
+        );
+        state.isThundering = event.toThunderState(); // 更新为新的雷暴状态
+        
         // 雷暴状态改变时，更新效果
         updateEffects();
     }

@@ -187,7 +187,21 @@ public abstract class BaseWeatherEffect implements WeatherEffect {
         if (commandList != null) {
             for (String cmd : commandList) {
                 String processedCmd = cmd.replace("%player%", player.getName());
-                plugin.getServer().dispatchCommand(plugin.getServer().getConsoleSender(), processedCmd);
+                
+                // 检查是否是title命令，如果是，则转换为tellraw命令
+                if (processedCmd.startsWith("title ") && processedCmd.contains(" subtitle ")) {
+                    // 提取玩家名称和JSON文本
+                    String[] parts = processedCmd.split(" subtitle ", 2);
+                    String playerName = parts[0].substring(6).trim();
+                    String jsonText = parts[1];
+                    
+                    // 创建tellraw命令
+                    String tellrawCmd = "tellraw " + playerName + " " + jsonText;
+                    plugin.getServer().dispatchCommand(plugin.getServer().getConsoleSender(), tellrawCmd);
+                } else {
+                    // 执行原始命令
+                    plugin.getServer().dispatchCommand(plugin.getServer().getConsoleSender(), processedCmd);
+                }
             }
         }
     }
