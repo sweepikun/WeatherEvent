@@ -1,0 +1,23 @@
+// 全局镜像源配置
+// 全局镜像源配置，使用阿里云镜像加速
+allprojects {
+    // 配置 buildscript 仓库
+    buildscript {
+        repositories {
+            // 添加阿里云镜像仓库
+            maven { url 'https://maven.aliyun.com/repository/public/' }
+            maven { url 'https://maven.aliyun.com/repository/central' } // 镜像中央仓库
+            maven { url 'https://maven.aliyun.com/repository/google' }   // 镜像 Google 仓库
+            maven { url 'https://maven.aliyun.com/repository/gradle-plugin' } // 镜像 Gradle 插件仓库
+        }
+    }
+    
+    // 配置项目仓库
+    repositories {
+        // 添加阿里云镜像仓库
+        maven { url 'https://maven.aliyun.com/repository/public/' }
+        maven { url 'https://maven.aliyun.com/repository/central' } // 镜像中央仓库
+        maven { url 'https://maven.aliyun.com/repository/google' }   // 镜像 Google 仓库
+        maven { url 'https://maven.aliyun.com/repository/gradle-plugin' } // 镜像 Gradle 插件仓库
+    }
+}

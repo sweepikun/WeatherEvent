@@ -1,0 +1,189 @@
+# WeatherEvent 配置文件
+# 动态天气效果系统，让天气影响游戏玩法
+
+# 基本设置
+main-world-only: true        # 是否只在主世界应用天气效果
+main-world-name: "world"     # 主世界名称
+notify-weather-changes: true # 是否通知玩家天气变化
+send-weather-info-on-join: true # 是否在玩家加入时发送天气信息
+send-weather-info-on-world-change: true # 是否在玩家切换世界时发送天气信息
+send-time-info: true # 是否发送时间信息
+check-time-conditions: true  # 是否检查时间条件（日出、日落、白天、夜晚）
+
+# 天气效果设置
+effects:
+  # 基本天气效果
+  
+  # 晴天效果
+  clear:
+    enabled: true      # 是否启用晴天效果
+    potion-effects:    # 药水效果列表
+      - type: SPEED    # 效果类型
+        level: 0       # 效果等级 (0 = 效果 I, 1 = 效果 II, 等)
+        duration: 100  # 效果持续时间（刻）
+      - type: JUMP     # 效果类型
+        level: 0       # 效果等级
+        duration: 100  # 效果持续时间（刻）
+    random-effects:    # 随机效果列表
+      chance: 0.05     # 触发几率 (0.0-1.0)
+      effects:
+        - type: REGENERATION
+          level: 0
+          duration: 200
+        - type: SATURATION
+          level: 0
+          duration: 100
+    commands:          # 执行的命令列表
+      chance: 0.01     # 触发几率 (0.0-1.0)
+      list:
+        - "title %player% title {\"text\":\"阳光普照\",\"color\":\"yellow\"}"
+        - "playsound minecraft:entity.player.levelup player %player%"
+  
+  # 雨天效果
+  rain:
+    enabled: true      # 是否启用雨天效果
+    potion-effects:    # 药水效果列表
+      - type: SLOW     # 效果类型
+        level: 0       # 效果等级 (0 = 缓慢 I, 1 = 缓慢 II, 等)
+        duration: 100  # 效果持续时间（刻）
+    random-effects:    # 随机效果列表
+      chance: 0.05     # 触发几率 (0.0-1.0)
+      effects:
+        - type: WEAKNESS
+          level: 0
+          duration: 200
+        - type: HUNGER
+          level: 0
+          duration: 100
+    commands:          # 执行的命令列表
+      chance: 0.01     # 触发几率 (0.0-1.0)
+      list:
+        - "title %player% title {\"text\":\"雨水淋湿了你\",\"color\":\"blue\"}"
+        - "playsound minecraft:weather.rain player %player%"
+  
+  # 雷暴效果
+  thunder:
+    enabled: true      # 是否启用雷暴效果
+    potion-effects:    # 药水效果列表
+      - type: WEAKNESS # 效果类型
+        level: 0       # 效果等级
+        duration: 100  # 效果持续时间（刻）
+    damage:            # 伤害设置
+      enabled: true    # 是否启用伤害
+      chance: 0.05     # 造成伤害的几率 (0.0-1.0)
+      amount: 2.0      # 伤害数值
+    random-effects:    # 随机效果列表
+      chance: 0.05     # 触发几率 (0.0-1.0)
+      effects:
+        - type: BLINDNESS
+          level: 0
+          duration: 100
+        - type: CONFUSION
+          level: 0
+          duration: 200
+    commands:          # 执行的命令列表
+      chance: 0.02     # 触发几率 (0.0-1.0)
+      list:
+        - "title %player% title {\"text\":\"雷电交加\",\"color\":\"dark_purple\"}"
+        - "playsound minecraft:entity.lightning_bolt.thunder player %player%"
+  
+  # 时间相关效果
+  
+  # 日出效果
+  sunrise:
+    enabled: true
+    time-range: [23000, 24000, 0, 1000]  # 游戏时间范围 [开始1, 开始2, 结束1, 结束2]
+    potion-effects:
+      - type: NIGHT_VISION
+        level: 0
+        duration: 100
+    random-effects:
+      chance: 0.05
+      effects:
+        - type: REGENERATION
+          level: 0
+          duration: 100
+    commands:
+      chance: 0.01
+      list:
+        - "title %player% title {\"text\":\"日出东方\",\"color\":\"gold\"}"
+        - "playsound minecraft:block.note_block.chime player %player%"
+  
+  # 日落效果
+  sunset:
+    enabled: true
+    time-range: [12000, 13000]  # 游戏时间范围
+    potion-effects:
+      - type: GLOWING
+        level: 0
+        duration: 100
+    random-effects:
+      chance: 0.05
+      effects:
+        - type: SLOW_FALLING
+          level: 0
+          duration: 100
+    commands:
+      chance: 0.01
+      list:
+        - "title %player% title {\"text\":\"日落西山\",\"color\":\"gold\"}"
+        - "playsound minecraft:block.note_block.bell player %player%"
+  
+  # 白天效果
+  day:
+    enabled: true
+    time-range: [1000, 11000]  # 游戏时间范围
+    potion-effects:
+      - type: FIRE_RESISTANCE
+        level: 0
+        duration: 100
+    random-effects:
+      chance: 0.03
+      effects:
+        - type: WATER_BREATHING
+          level: 0
+          duration: 200
+    commands:
+      chance: 0.01
+      list:
+        - "title %player% actionbar {\"text\":\"阳光明媚\",\"color\":\"yellow\"}"
+  
+  # 夜晚效果
+  night:
+    enabled: true
+    time-range: [13000, 23000]  # 游戏时间范围
+    potion-effects:
+      - type: NIGHT_VISION
+        level: 0
+        duration: 100
+    random-effects:
+      chance: 0.03
+      effects:
+        - type: INVISIBILITY
+          level: 0
+          duration: 200
+    commands:
+      chance: 0.01
+      list:
+        - "title %player% actionbar {\"text\":\"夜幕降临\",\"color\":\"dark_blue\"}"
+
+# 消息设置
+messages:
+  rain-start: "&9开始下雨了！移动速度将会减慢。"
+  rain-stop: "&e雨停了，天气转晴！"
+  thunder-start: "&5雷暴开始了，小心闪电！"
+  thunder-stop: "&e雷暴结束了！"
+  sunrise: "&6日出东方，新的一天开始了！"
+  sunset: "&6日落西山，夜晚即将来临。"
+  day-start: "&e白天开始了！"
+  night-start: "&9夜晚降临了！"
+  weather-info-clear: "当前天气：&e晴朗"
+  weather-info-rain: "当前天气：&9下雨"
+  weather-info-thunder: "当前天气：&5雷暴"
+  time-info-day: "当前时间：&e白天"
+  time-info-night: "当前时间：&9夜晚"
+  time-info-sunrise: "当前时间：&6日出"
+  time-info-sunset: "当前时间：&6日落"
+  command-clear: "&e天气已设置为晴朗！"
+  command-rain: "&9天气已设置为下雨！"
+  command-thunder: "&5天气已设置为雷暴！"

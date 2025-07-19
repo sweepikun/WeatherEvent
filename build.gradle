@@ -40,15 +40,17 @@ repositories {
     }
     
     // 最后才尝试中央仓库
-    mavenCentral() {
+    maven { 
+        url 'https://repo.maven.apache.org/maven2/'
+        name 'Maven Central'
         metadataSources {
             mavenPom()
             artifact()
             ignoreGradleMetadataRedirection()
         }
-        // 限制中央仓库使用频率
-        onlyIf {
-            !System.getProperty('disableMavenCentral', 'false').toBoolean()
+        content {
+            // 只有当其他仓库没有找到依赖时才使用
+            releasesOnly()
         }
     }
 }
@@ -61,8 +63,8 @@ dependencies {
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
 }
 
 tasks.withType(JavaCompile) {

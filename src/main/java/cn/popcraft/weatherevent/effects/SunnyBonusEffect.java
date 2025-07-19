@@ -15,8 +15,8 @@ import java.util.ArrayList;
  */
 public class SunnyBonusEffect extends BaseWeatherEffect {
     
-    private final boolean giveSpeed;
-    private final boolean giveJumpBoost;
+    private boolean giveSpeed;
+    private boolean giveJumpBoost;
     
     /**
      * 创建一个晴天奖励效果
@@ -25,34 +25,33 @@ public class SunnyBonusEffect extends BaseWeatherEffect {
      */
     public SunnyBonusEffect(Plugin plugin, ConfigurationSection config) {
         super(plugin, "sunny_bonus", config);
-        
+    }
+
+    @Override
+    public void loadFromConfig(ConfigurationSection config) {
         // 从配置中读取是否提供速度和跳跃提升效果
         this.giveSpeed = config != null && config.getBoolean("give-speed", true);
         this.giveJumpBoost = config != null && config.getBoolean("give-jump-boost", true);
         
         // 如果没有配置药水效果，添加默认效果
-        if (potionEffects.isEmpty()) {
+        if (getPotionEffects().isEmpty() && isEnabled()) {
             int effectLevel = config != null ? config.getInt("effect-level", 0) : 0;
             int duration = 5 * 20; // 5秒 * 20刻 = 100刻
             
             if (giveSpeed) {
-                potionEffects.add(new PotionEffect(
+                addPotionEffect(
                     PotionEffectType.SPEED, 
                     duration, 
-                    effectLevel, 
-                    false, // 不显示粒子效果
-                    true   // 显示图标
-                ));
+                    effectLevel
+                );
             }
             
             if (giveJumpBoost) {
-                potionEffects.add(new PotionEffect(
+                addPotionEffect(
                     PotionEffectType.JUMP, 
                     duration, 
-                    effectLevel, 
-                    false, // 不显示粒子效果
-                    true   // 显示图标
-                ));
+                    effectLevel
+                );
             }
         }
     }

@@ -15,9 +15,9 @@ import java.util.Random;
  */
 public class ThunderDamageEffect extends BaseWeatherEffect {
     
-    private final double damageChance;
-    private final double damageAmount;
-    private final boolean applyWeakness;
+    private double damageChance;
+    private double damageAmount;
+    private boolean applyWeakness;
     private final Random random;
     
     /**
@@ -25,25 +25,26 @@ public class ThunderDamageEffect extends BaseWeatherEffect {
      * @param plugin 插件实例
      * @param config 效果配置
      */
-    public ThunderDamageEffect(Plugin plugin, ConfigurationSection config) {
-        super(plugin, "thunder_damage", config);
-        
+    public ThunderDamageEffect(Plugin plugin, String name, ConfigurationSection config) {
+        super(plugin, name, config);
+        this.random = new Random();
+    }
+
+    @Override
+    public void loadFromConfig(ConfigurationSection config) {
         // 从配置中读取参数
         this.damageChance = config != null ? config.getDouble("damage-chance", 0.1) : 0.1;
         this.damageAmount = config != null ? config.getDouble("damage-amount", 2.0) : 2.0;
         this.applyWeakness = config != null && config.getBoolean("apply-weakness", true);
-        this.random = new Random();
         
         // 如果配置了虚弱效果，添加到药水效果列表
-        if (applyWeakness && potionEffects.isEmpty()) {
+        if (applyWeakness && getPotionEffects().isEmpty() && isEnabled()) {
             int duration = 10 * 20; // 10秒 * 20刻 = 200刻
-            potionEffects.add(new PotionEffect(
+            addPotionEffect(
                 PotionEffectType.WEAKNESS, 
                 duration, 
-                0, 
-                false, 
-                true
-            ));
+                0
+            );
         }
     }
     

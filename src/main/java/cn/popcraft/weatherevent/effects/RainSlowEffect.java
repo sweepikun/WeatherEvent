@@ -23,18 +23,19 @@ public class RainSlowEffect extends BaseWeatherEffect {
      */
     public RainSlowEffect(Plugin plugin, ConfigurationSection config) {
         super(plugin, "rain_slow", config);
-        
+    }
+
+    @Override
+    public void loadFromConfig(ConfigurationSection config) {
         // 如果没有配置药水效果，添加默认的缓慢效果
-        if (potionEffects.isEmpty()) {
+        if (getPotionEffects().isEmpty() && isEnabled()) {
             int slowLevel = config != null ? config.getInt("slow-level", 0) : 0;
             int duration = 5 * 20; // 5秒 * 20刻 = 100刻
-            potionEffects.add(new PotionEffect(
+            addPotionEffect(
                 PotionEffectType.SLOW, 
                 duration, 
-                slowLevel, 
-                false, // 不显示粒子效果
-                false  // 不显示图标
-            ));
+                slowLevel
+            );
         }
     }
     

@@ -14,6 +14,11 @@ import java.util.Random;
 /**
  * 基础效果类，提供通用的效果实现
  */
+import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
+import org.bukkit.potion.PotionEffect;
+
 public abstract class BaseEffect implements WeatherEffect {
     protected final WeatherEvent plugin;
     protected final String id;
@@ -139,17 +144,9 @@ public abstract class BaseEffect implements WeatherEffect {
     /**
      * 应用效果到玩家
      * @param player 目标玩家
-     */
-    @Override
-    public void applyEffect(Player player) {
-        apply(player, player.getWorld());
-    }
-    
-    /**
-     * 应用效果到玩家
-     * @param player 目标玩家
      * @param world 目标世界
      */
+    @Override
     public void apply(Player player, World world) {
         if (!enabled) return;
         
@@ -176,6 +173,7 @@ public abstract class BaseEffect implements WeatherEffect {
      * @param player 目标玩家
      * @param world 目标世界
      */
+    @Override
     public void remove(Player player, World world) {
         if (!enabled) return;
         
@@ -234,6 +232,32 @@ public abstract class BaseEffect implements WeatherEffect {
     @Override
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
+    }
+
+    @Override
+    public String getName() {
+        return this.getClass().getSimpleName();
+    }
+
+    @Override
+    public List<PotionEffect> getPotionEffects() {
+        return potionEffects;
+    }
+
+    @Override
+    public Map<String, Object> getRandomEffects() {
+        Map<String, Object> map = new HashMap<>();
+        map.put("chance", randomEffectChance);
+        map.put("effects", randomEffects);
+        return map;
+    }
+
+    @Override
+    public Map<String, Object> getCommands() {
+        Map<String, Object> map = new HashMap<>();
+        map.put("chance", commandChance);
+        map.put("list", commands);
+        return map;
     }
 
     /**

@@ -9,30 +9,28 @@ import org.bukkit.potion.PotionEffectType;
 /**
  * 日出效果类
  */
-public class SunriseEffect extends BaseEffect {
+public class SunriseEffect extends BaseWeatherEffect {
 
     /**
      * 构造一个日出效果
      * @param plugin 插件实例
-     */
-    public SunriseEffect(WeatherEvent plugin) {
-        super(plugin, "sunrise", "日出效果：增加生命恢复");
-    }
-
-    /**
-     * 从配置中加载效果
      * @param config 配置部分
      */
-    @Override
-    public void loadFromConfig(ConfigurationSection config) {
-        super.loadFromConfig(config);
+    public SunriseEffect(WeatherEvent plugin, ConfigurationSection config) {
+        super(plugin, "sunrise", config);
         
         if (config == null) return;
         
         // 如果没有配置药水效果，添加默认的效果
-        if (potionEffects.isEmpty() && enabled) {
-            potionEffects.add(new PotionEffect(PotionEffectType.REGENERATION, 100, 0));
+        if (getPotionEffects().isEmpty() && isEnabled()) {
+            addPotionEffect(PotionEffectType.REGENERATION, 100, 0);
         }
+    }
+    
+    @Override
+    public void loadFromConfig(ConfigurationSection config) {
+        // 从配置加载设置
+        super.loadFromConfig(config);
     }
 
     /**

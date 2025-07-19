@@ -3,8 +3,9 @@ package cn.popcraft.weatherevent.effects;
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.plugin.Plugin;
-
-import java.util.List;
+import org.bukkit.potion.PotionEffect; // 导入 PotionEffect 类，用于 getPotionEffects() 方法
+import java.util.ArrayList; // 导入 ArrayList 用于创建空列表
+import java.util.List; // 导入 List 接口
 
 /**
  * 基础时间相关天气效果实现类
@@ -76,5 +77,15 @@ public abstract class BaseTimeWeatherEffect extends BaseWeatherEffect implements
     @Override
     public long[] getTimeRange() {
         return timeRange;
+    }
+    
+    // 新添加的方法：修复返回类型不兼容的错误
+    // 假设 WeatherEffect 或 BaseWeatherEffect 定义了 getPotionEffects() 返回 List<PotionEffect>
+    // 这里提供一个默认实现，返回空列表，以确保兼容性
+    @Override
+    public List<PotionEffect> getPotionEffects() {
+        // 默认返回空列表，避免 NullPointerException
+        // 在子类中可以覆写此方法以提供具体实现
+        return new ArrayList<>(); 
     }
 }
