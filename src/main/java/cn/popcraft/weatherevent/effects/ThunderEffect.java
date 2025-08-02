@@ -6,7 +6,9 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import java.util.List;
-
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
+import org.bukkit.Sound;
 /**
  * 雷暴天气效果
  * 在雷暴时应用的效果
@@ -40,7 +42,10 @@ public class ThunderEffect extends BaseWeatherEffect {
 
         // 设置默认命令，确保字段不为空
         if (commands == null || !commands.containsKey("list") || ((List<?>) commands.get("list")).isEmpty()) {
-            addCommand("playsound minecraft:entity.lightning_bolt.thunder master %player% ~ ~ ~ 100 1");
+            // 使用Spigot API播放声音
+for(Player player : Bukkit.getOnlinePlayers()) {
+    player.playSound(player.getLocation(), Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 1.0f, 1.0f);
+}
             addCommand("tellraw %player% {\"text\":\"雷声轰鸣！\",\"color\":\"red\"}");
         }
     }

@@ -1,5 +1,9 @@
 package cn.popcraft.weatherevent.effects;
 
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
+import org.bukkit.Sound;
+
 import cn.popcraft.weatherevent.WeatherEvent;
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
@@ -30,7 +34,10 @@ public class RainEffect extends BaseWeatherEffect {
         
         // 设置默认命令
         if (getCommands().isEmpty() && isEnabled()) {
-            addCommand("playsound minecraft:weather.rain master %player% ~ ~ ~ 100 1");
+            // 使用Spigot API播放声音
+for(Player player : Bukkit.getOnlinePlayers()) {
+    player.playSound(player.getLocation(), Sound.WEATHER_RAIN, 1.0f, 1.0f);
+}
             addCommand("tellraw %player% {\"text\":\"感觉有点冷...\",\"color\":\"blue\"}");
         }
     }

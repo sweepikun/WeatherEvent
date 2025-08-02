@@ -1,6 +1,14 @@
 package cn.popcraft.weatherevent.listeners;
 
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import net.md_5.bungee.api.ChatMessageType;
+import net.md_5.bungee.api.chat.TextComponent;
+import org.bukkit.entity.Player;
+
 import cn.popcraft.weatherevent.WeatherEvent;
+import net.md_5.bungee.api.ChatMessageType;
+import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -77,7 +85,7 @@ public class PlayerListener implements Listener {
             weatherInfo = plugin.getConfig().getString("messages.weather-info-clear", "当前天气：&e晴朗");
         }
         
-        player.sendMessage(org.bukkit.ChatColor.translateAlternateColorCodes('&', weatherInfo));
+        player.sendTitle("", org.bukkit.ChatColor.translateAlternateColorCodes('&', weatherInfo), 10, 70, 20);
         
         // 获取当前时间并发送时间信息
         if (plugin.getConfig().getBoolean("send-time-info", true)) {
@@ -94,7 +102,7 @@ public class PlayerListener implements Listener {
                 timeInfo = plugin.getConfig().getString("messages.time-info-night", "当前时间：&1夜晚");
             }
             
-            player.sendMessage(org.bukkit.ChatColor.translateAlternateColorCodes('&', timeInfo));
+            player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(org.bukkit.ChatColor.translateAlternateColorCodes('&', timeInfo)));
         }
     }
 }
