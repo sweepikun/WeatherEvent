@@ -1,0 +1,266 @@
+# 生物群系天气效果配置
+# 此配置文件定义了不同生物群系在不同天气下的效果
+
+# 全局配置
+enabled: true
+update-interval: 20  # 效果更新间隔，单位为tick
+
+# 生物群系配置
+biomes:
+  # 沙漠生物群系
+  DESERT:
+    enabled: true
+    weather:
+      # 沙漠晴天效果
+      clear:
+        enabled: true
+        potion-effects:
+          - type: FIRE_RESISTANCE
+            level: 0
+            duration: 200
+          - type: SPEED
+            level: 1
+            duration: 100
+        message:
+          enabled: true
+          text: "&e沙漠中的阳光异常强烈！"
+          chance: 0.5
+        sound:
+          enabled: true
+          resource: "block.sand.step"
+          volume: 1.0
+          pitch: 1.0
+          chance: 0.3
+      
+      # 沙漠雨天效果（沙尘暴）
+      rain:
+        enabled: true
+        potion-effects:
+          - type: BLINDNESS
+            level: 0
+            duration: 100
+          - type: SLOW
+            level: 1
+            duration: 150
+        message:
+          enabled: true
+          text: "&6沙尘暴来袭！视线受阻！"
+          chance: 0.7
+        sound:
+          enabled: true
+          resource: "entity.ghast.ambient"
+          volume: 0.5
+          pitch: 0.8
+          chance: 0.4
+        damage:
+          enabled: true
+          chance: 0.2
+          amount: 1.0
+  
+  # 森林生物群系
+  FOREST:
+    enabled: true
+    weather:
+      # 森林晴天效果
+      clear:
+        enabled: true
+        potion-effects:
+          - type: REGENERATION
+            level: 0
+            duration: 100
+          - type: SATURATION
+            level: 0
+            duration: 60
+        message:
+          enabled: true
+          text: "&a森林中的阳光透过树叶洒落，你感到精力充沛！"
+          chance: 0.4
+        sound:
+          enabled: true
+          resource: "entity.experience_orb.pickup"
+          volume: 0.8
+          pitch: 1.2
+          chance: 0.5
+      
+      # 森林雨天效果
+      rain:
+        enabled: true
+        potion-effects:
+          - type: WATER_BREATHING
+            level: 0
+            duration: 200
+        message:
+          enabled: true
+          text: "&9雨水滋润着森林，空气清新！"
+          chance: 0.6
+        sound:
+          enabled: true
+          resource: "weather.rain"
+          volume: 1.0
+          pitch: 1.0
+          chance: 0.7
+      
+      # 森林雷暴效果
+      thunder:
+        enabled: true
+        potion-effects:
+          - type: SPEED
+            level: 1
+            duration: 100
+          - type: JUMP
+            level: 1
+            duration: 100
+        message:
+          enabled: true
+          text: "&c小心森林中的闪电！"
+          chance: 0.8
+        sound:
+          enabled: true
+          resource: "entity.lightning_bolt.thunder"
+          volume: 1.0
+          pitch: 1.0
+          chance: 0.9
+        damage:
+          enabled: true
+          chance: 0.3
+          amount: 2.0
+  
+  # 雪原生物群系
+  SNOWY_TUNDRA:
+    enabled: true
+    weather:
+      # 雪原晴天效果
+      clear:
+        enabled: true
+        potion-effects:
+          - type: NIGHT_VISION
+            level: 0
+            duration: 300
+        message:
+          enabled: true
+          text: "&f雪地反射的阳光非常刺眼！"
+          chance: 0.5
+        sound:
+          enabled: true
+          resource: "block.snow.step"
+          volume: 0.8
+          pitch: 1.2
+          chance: 0.4
+      
+      # 雪原雨天/雪天效果
+      rain:
+        enabled: true
+        potion-effects:
+          - type: SLOW
+            level: 1
+            duration: 200
+          - type: WEAKNESS
+            level: 0
+            duration: 150
+        message:
+          enabled: true
+          text: "&b暴风雪中行走变得困难！"
+          chance: 0.7
+        sound:
+          enabled: true
+          resource: "weather.rain"
+          volume: 0.5
+          pitch: 0.8
+          chance: 0.6
+        damage:
+          enabled: true
+          chance: 0.1
+          amount: 0.5
+  
+  # 沼泽生物群系
+  SWAMP:
+    enabled: true
+    weather:
+      # 沼泽晴天效果
+      clear:
+        enabled: true
+        potion-effects:
+          - type: WATER_BREATHING
+            level: 0
+            duration: 200
+        message:
+          enabled: true
+          text: "&2沼泽地的空气潮湿而闷热。"
+          chance: 0.4
+        sound:
+          enabled: true
+          resource: "entity.slime.squish"
+          volume: 0.3
+          pitch: 1.0
+          chance: 0.3
+      
+      # 沼泽雨天效果
+      rain:
+        enabled: true
+        potion-effects:
+          - type: POISON
+            level: 0
+            duration: 60
+          - type: SLOW
+            level: 0
+            duration: 100
+        message:
+          enabled: true
+          text: "&5雨水使沼泽更加泥泞，小心毒素！"
+          chance: 0.6
+        sound:
+          enabled: true
+          resource: "entity.slime.attack"
+          volume: 0.5
+          pitch: 0.8
+          chance: 0.5
+        damage:
+          enabled: true
+          chance: 0.15
+          amount: 1.0
+  
+  # 蘑菇岛生物群系
+  MUSHROOM_FIELDS:
+    enabled: true
+    weather:
+      # 蘑菇岛晴天效果
+      clear:
+        enabled: true
+        potion-effects:
+          - type: SATURATION
+            level: 0
+            duration: 100
+          - type: NIGHT_VISION
+            level: 0
+            duration: 200
+        message:
+          enabled: true
+          text: "&d蘑菇岛的神奇能量环绕着你！"
+          chance: 0.5
+        sound:
+          enabled: true
+          resource: "block.fungus.break"
+          volume: 0.8
+          pitch: 1.0
+          chance: 0.4
+      
+      # 蘑菇岛雨天效果
+      rain:
+        enabled: true
+        potion-effects:
+          - type: REGENERATION
+            level: 1
+            duration: 100
+          - type: SATURATION
+            level: 1
+            duration: 100
+        message:
+          enabled: true
+          text: "&d雨水滋润着蘑菇，释放出治愈能量！"
+          chance: 0.6
+        sound:
+          enabled: true
+          resource: "entity.experience_orb.pickup"
+          volume: 0.8
+          pitch: 1.2
+          chance: 0.5

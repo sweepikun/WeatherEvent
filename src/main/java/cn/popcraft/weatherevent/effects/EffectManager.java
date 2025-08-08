@@ -3,12 +3,14 @@ package cn.popcraft.weatherevent.effects;
 import cn.popcraft.weatherevent.WeatherEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
+import org.bukkit.block.Biome;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.weather.WeatherChangeEvent;
 import org.bukkit.event.weather.ThunderChangeEvent;
@@ -30,6 +32,9 @@ public class EffectManager implements Listener {
     // 用于跟踪每个世界的天气状态
     private final Map<String, WeatherState> worldWeatherStates;
     
+    // 生物群系天气管理器
+    private final BiomeWeatherManager biomeWeatherManager;
+    
     // 内部类，用于存储世界的天气状态
     private static class WeatherState {
         boolean isRaining;
@@ -44,12 +49,14 @@ public class EffectManager implements Listener {
     /**
      * 创建一个效果管理器
      * @param plugin 插件实例
+     * @param biomeWeatherManager 生物群系天气管理器
      */
-    public EffectManager(WeatherEvent plugin) {
+    public EffectManager(WeatherEvent plugin, BiomeWeatherManager biomeWeatherManager) {
         this.plugin = plugin;
         this.effects = new HashMap<>();
         this.worldWeatherStates = new HashMap<>();
         this.updateInterval = 20; // 默认每秒更新一次
+        this.biomeWeatherManager = biomeWeatherManager;
     }
     
     /**
@@ -78,6 +85,9 @@ public class EffectManager implements Listener {
         
         // 加载时间效果
         loadTimeEffects(config);
+        
+        // 加载生物群系天气效果
+        loadBiomeWeatherEffects(config);
         
         // 启动效果更新任务
         startEffectTask();
@@ -131,6 +141,16 @@ public class EffectManager implements Listener {
         if (config.getBoolean("clear.enabled", true)) {
             registerEffect(new ClearEffect(plugin, config.getConfigurationSection("clear")));
         }
+        
+        // 洞穴效果，期望 2 参数：WeatherEvent, ConfigurationSection
+        if (config.getBoolean("cave.enabled", false)) {
+            registerEffect(new CaveEffect(plugin, config.getConfigurationSection("cave")));
+        }
+        
+        // 生物群系天气效果，期望 2 参数：WeatherEvent, ConfigurationSection
+        if (config.getBoolean("biome-weather.enabled", false)) {
+            registerEffect(new BiomeWeatherEffect(plugin, config.getConfigurationSection("biome-weather")));
+        }
     }
     
     /**
@@ -146,6 +166,30 @@ public class EffectManager implements Listener {
         // 日落效果，现在期望 2 参数：WeatherEvent, ConfigurationSection
         if (config.getBoolean("sunset.enabled", true)) {
             registerEffect(new SunsetEffect(plugin, config.getConfigurationSection("sunset")));
+        }
+    }
+    
+    /**
+     * 加载生物群系天气效果
+     * @param config 配置部分
+     */
+    private void loadBiomeWeatherEffects(ConfigurationSection config) {
+        // 加载生物群系天气效果
+        ConfigurationSection biomeWeatherSection = config.getConfigurationSection("biome-weather");
+        if (biomeWeatherSection != null) {
+            biomeWeatherManager.loadFromConfig(biomeWeatherSection);
+        }
+        
+        // 加载单独的生物群系效果
+        ConfigurationSection biomesSection = config.getConfigurationSection("biomes");
+        if (biomesSection != null) {
+            for (String biomeName : biomesSection.getKeys(false)) {
+                ConfigurationSection biomeSection = biomesSection.getConfigurationSection(biomeName);
+                if (biomeSection != null && biomeSection.getBoolean("enabled", false)) {
+                    registerEffect(new BiomeEffect(plugin, biomeName, biomeSection));
+                    plugin.getLogger().info("已加载生物群系效果: " + biomeName);
+                }
+            }
         }
         
         // 白天效果，现在期望 2 参数：WeatherEvent, ConfigurationSection
@@ -170,6 +214,8 @@ public class EffectManager implements Listener {
         registerEffect(new RainEffect(plugin, null));
         registerEffect(new ThunderEffect(plugin, null));
         registerEffect(new ClearEffect(plugin, null)); // 假设期望 2 参数
+        registerEffect(new CaveEffect(plugin, null)); // 添加默认的洞穴效果
+        registerEffect(new BiomeWeatherEffect(plugin, null)); // 添加默认的生物群系天气效果
         
         // 注册默认的时间效果，调整参数
         registerEffect(new SunriseEffect(plugin, null));
@@ -248,6 +294,11 @@ public class EffectManager implements Listener {
             for (Player player : world.getPlayers()) {
                 for (BaseWeatherEffect effect : applicableEffects) {
                     effect.apply(player, world);
+                }
+                
+                // 应用生物群系天气效果
+                if (biomeWeatherManager != null && biomeWeatherManager.isEnabled()) {
+                    biomeWeatherManager.applyEffects(player, world);
                 }
                 
                 // 执行天气指令
@@ -432,5 +483,32 @@ public class EffectManager implements Listener {
         
         // 雷暴状态改变时，更新效果
         updateEffects();
+    }
+    
+    /**
+     * 当玩家移动时，检测生物群系变化
+     */
+    @EventHandler
+    public void onPlayerMove(PlayerMoveEvent event) {
+        // 只在玩家跨区块移动或者改变生物群系时处理
+        if (event.getFrom().getBlock().getBiome() != event.getTo().getBlock().getBiome()) {
+            Player player = event.getPlayer();
+            World world = player.getWorld();
+            
+            // 更新玩家的生物群系相关效果
+            if (biomeWeatherManager != null && biomeWeatherManager.isEnabled()) {
+                biomeWeatherManager.applyEffects(player, world);
+            }
+            
+            // 检查并应用单独的生物群系效果
+            for (BaseWeatherEffect effect : effects.values()) {
+                if (effect instanceof BiomeEffect) {
+                    BiomeEffect biomeEffect = (BiomeEffect) effect;
+                    if (biomeEffect.isApplicable(player, world)) {
+                        biomeEffect.apply(player, world);
+                    }
+                }
+            }
+        }
     }
 }

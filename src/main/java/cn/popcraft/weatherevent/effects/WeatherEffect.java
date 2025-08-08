@@ -86,4 +86,28 @@ public interface WeatherEffect {
      * @return 命令配置
      */
     Map<String, Object> getCommands();
+    
+    /**
+     * 获取标题配置
+     * @return 标题配置
+     */
+    Map<String, Object> getTitle();
+    
+    /**
+     * 获取动作栏配置
+     * @return 动作栏配置
+     */
+    Map<String, Object> getActionBar();
+    
+    /**
+     * 获取声音配置
+     * @return 声音配置
+     */
+    Map<String, Object> getSound();
+    
+    /**
+     * 获取消息配置
+     * @return 消息配置
+     */
+    Map<String, Object> getMessage();
 }

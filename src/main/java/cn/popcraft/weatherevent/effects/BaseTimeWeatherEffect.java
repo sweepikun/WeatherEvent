@@ -2,7 +2,7 @@ package cn.popcraft.weatherevent.effects;
 
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.plugin.Plugin;
+import cn.popcraft.weatherevent.WeatherEvent;
 import org.bukkit.potion.PotionEffect; // 导入 PotionEffect 类，用于 getPotionEffects() 方法
 import java.util.ArrayList; // 导入 ArrayList 用于创建空列表
 import java.util.List; // 导入 List 接口
