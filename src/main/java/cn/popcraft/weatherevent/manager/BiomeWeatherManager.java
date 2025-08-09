@@ -36,19 +36,19 @@ public class BiomeWeatherManager {
     /**
      * 加载生物群系天气效果配置
      */
-    public void loadConfig() {
+    public void loadConfig() throws IllegalArgumentException {
         // 清除现有效果
         biomeWeatherEffects.clear();
         
         // 获取配置文件
-        File configFile = new File(plugin.getDataFolder(), "biome-weather.yml");
+        File configFile = new File(plugin.getDataFolder(), "config.yml");
         if (!configFile.exists()) {
-            plugin.saveResource("biome-weather.yml", false);
+            plugin.saveResource("config.yml", false);
         }
         
         FileConfiguration config = YamlConfiguration.loadConfiguration(configFile);
-        if (!(config instanceof ConfigurationSection)) {
-            plugin.getLogger().warning("biome-weather.yml 不是一个有效的 ConfigurationSection");
+        if (config == null) {
+            plugin.getLogger().warning("config.yml 不是一个有效的配置文件");
             return;
         }
         
@@ -69,10 +69,37 @@ public class BiomeWeatherManager {
         for (String biomeName : biomesSection.getKeys(false)) {
             try {
                 ConfigurationSection biomeSection = biomesSection.getConfigurationSection(biomeName);
-                if (biomeSection == null) continue;
+                if (biomeSection == null) {
+                    plugin.getLogger().warning("生物群系 " + biomeName + " 的配置格式错误");
+                    continue;
+                }
                 
-                BiomeWeatherEffect effect = new BiomeWeatherEffect(plugin, "biome_weather_" + biomeName);
-                effect.loadFromConfig(biomeSection);
+                BiomeWeatherEffect effect = new BiomeWeatherEffect(plugin, biomeSection);
+                
+                biomeWeatherEffects.put(biomeName, effect);
+                plugin.getLogger().info("已加载生物群系 " + biomeName + " 的天气效果");
+            } catch (Exception e) {
+                plugin.getLogger().log(Level.SEVERE, "加载生物群系 " + biomeName + " 的天气效果时出错", e);
+            }
+        }
+    }
+
+
+
+    private void loadBiomeEffects() {
+        FileConfiguration config = plugin.getConfig();
+        ConfigurationSection biomesSection = config.getConfigurationSection("biomes");
+        if (biomesSection == null) return;
+
+        for (String biomeName : biomesSection.getKeys(false)) {
+            try {
+                ConfigurationSection biomeSection = biomesSection.getConfigurationSection(biomeName);
+                if (biomeSection == null) {
+                    plugin.getLogger().warning("生物群系 " + biomeName + " 的配置格式错误");
+                    continue;
+                }
+                
+                BiomeWeatherEffect effect = new BiomeWeatherEffect(plugin, biomeSection);
                 
                 biomeWeatherEffects.put(biomeName, effect);
                 plugin.getLogger().info("已加载生物群系 " + biomeName + " 的天气效果");

@@ -28,7 +28,7 @@ public class WeatherEvent extends JavaPlugin {
         
         // 初始化生物群系天气管理器
         biomeWeatherManager = new BiomeWeatherManager(this);
-        biomeWeatherManager.loadConfig();
+        biomeWeatherManager.loadFromConfig(getConfig().getConfigurationSection("biomes"));
         
         // 初始化效果管理器
         effectManager = new EffectManager(this, biomeWeatherManager);
@@ -59,7 +59,7 @@ public class WeatherEvent extends JavaPlugin {
         sharedEffectManager = new SharedEffectManager(this);
         
         // 重新加载生物群系天气配置
-        biomeWeatherManager.loadConfig();
+        biomeWeatherManager.loadFromConfig(getConfig().getConfigurationSection("biomes"));
         
         // 重新加载效果
         effectManager.loadEffects();

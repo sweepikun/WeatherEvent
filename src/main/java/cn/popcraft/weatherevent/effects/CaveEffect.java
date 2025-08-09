@@ -92,7 +92,7 @@ public class CaveEffect extends BaseWeatherEffect {
      * @param duration 持续时间（tick）
      * @param amplifier 效果等级
      */
-    private void addPotionEffect(PotionEffectType type, int duration, int amplifier) {
+    protected void addPotionEffect(PotionEffectType type, int duration, int amplifier) {
         potionEffects.add(new PotionEffect(type, duration, amplifier, false, false, true));
     }
 }

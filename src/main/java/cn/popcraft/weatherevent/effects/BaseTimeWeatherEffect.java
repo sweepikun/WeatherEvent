@@ -3,6 +3,7 @@ package cn.popcraft.weatherevent.effects;
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 import cn.popcraft.weatherevent.WeatherEvent;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.potion.PotionEffect; // 导入 PotionEffect 类，用于 getPotionEffects() 方法
 import java.util.ArrayList; // 导入 ArrayList 用于创建空列表
 import java.util.List; // 导入 List 接口
@@ -21,7 +22,7 @@ public abstract class BaseTimeWeatherEffect extends BaseWeatherEffect implements
      * @param effectName 效果名称
      * @param config 效果配置
      */
-    public BaseTimeWeatherEffect(Plugin plugin, String effectName, ConfigurationSection config) {
+    public BaseTimeWeatherEffect(WeatherEvent plugin, String effectName, ConfigurationSection config) {
         super(plugin, effectName, config);
         loadTimeRange();
     }
