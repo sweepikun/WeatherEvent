@@ -15,7 +15,7 @@ WeatherEvent 插件通过扩展原版天气系统，为服务器管理员提供�
 
 1. 将插件jar文件放入服务器的`plugins`文件夹
 2. 重启服务器
-3. 插件会自动生成配置文件`config.yml`和`effects`文件夹
+3. 插件会自动生成配置文件`config.yml`和`weatherevent`文件夹
 
 ## 基础命令
 
@@ -164,4 +164,4 @@ commands:
 
 ## 示例配置
 
-查看 `config-enhanced.yml` 文件获取完整的示例配置。
+查看 `config.yml` 文件获取完整的示例配置。
