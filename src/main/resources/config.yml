@@ -65,11 +65,157 @@ shared-effects:
       list:
         - "particle minecraft:heart ~ ~1 ~ 0.5 0.5 0.5 0.1 10 force"
         - "title %player% actionbar {\"text\":\"强力治疗！\",\"color\":\"green\"}"
+        
+  # 沙尘暴效果
+  sandstorm_effect:
+    potion-effects:
+      - type: SLOW
+        level: 1
+        duration: 200
+      - type: BLINDNESS
+        level: 0
+        duration: 100
+    commands:
+      list:
+        - "particle minecraft:dust 0.8 0.7 0.4 1 ~ ~1 ~ 1 1 1 0.1 20 force"
+        - "playsound minecraft:weather.rain ambient %player% ~ ~ ~ 0.8 0.7"
+    message:
+      enabled: true
+      text: "§6沙尘暴来袭，视线受阻！"
+      chance: 0.6
+      
+  # 暴风雪效果
+  blizzard_effect:
+    potion-effects:
+      - type: SLOW
+        level: 2
+        duration: 200
+      - type: WEAKNESS
+        level: 1
+        duration: 200
+    commands:
+      list:
+        - "particle minecraft:snowflake ~ ~1 ~ 1 1 1 0.1 30 force"
+        - "particle minecraft:cloud 0.8 0.8 1.0 1 ~ ~1 ~ 1 1 1 0.1 20 force"
+        - "playsound minecraft:weather.rain ambient %player% ~ ~ ~ 0.8 2.0"
+    message:
+      enabled: true
+      text: "§b暴风雪！寒冷刺骨！"
+      chance: 0.6
 
 # 生物群系天气效果配置
 biome-weather:
   enabled: true
   update-interval: 20  # 效果更新间隔，单位为tick
+  # 为不同生物群系定义独特的天气效果
+  biomes:
+    # 沙漠生物群系
+    desert:
+      # 沙漠中的特殊天气 - 沙尘暴
+      weather:
+        # 晴天时可能触发沙尘暴
+        clear:
+          enabled: true
+          chance: 0.1  # 10% 几率在晴天触发沙尘暴
+          effects:
+            - type: sandstorm
+              duration: [200, 400]  # 持续时间10-20秒
+        # 雨天时的特殊效果（沙漠中很少下雨）
+        rain:
+          enabled: true
+          chance: 0.01  # 1% 几率下雨
+          potion-effects:
+            - type: REGENERATION
+              level: 1
+              duration: 200
+          message:
+            enabled: true
+            text: "§a奇迹！沙漠中下雨了！"
+            chance: 1.0
+            
+    # 雪原生物群系
+    snowy_plains:
+      # 雪原中的特殊天气 - 暴风雪
+      weather:
+        # 下雪时可能触发暴风雪
+        rain:
+          enabled: true
+          chance: 0.15  # 15% 几率触发暴风雪
+          effects:
+            - type: blizzard
+              duration: [300, 600]  # 持续时间15-30秒
+        # 晴天时的特殊效果
+        clear:
+          enabled: true
+          potion-effects:
+            - type: SPEED
+              level: 0
+              duration: 200
+          message:
+            enabled: true
+            text: "§b雪后初晴，空气清新"
+            chance: 0.3
+            
+    # 丛林生物群系
+    jungle:
+      # 丛林中的特殊天气 - 湿热
+      weather:
+        # 任何天气下都可能触发湿热效果
+        any:
+          enabled: true
+          chance: 0.2  # 20% 几率触发湿热效果
+          potion-effects:
+            - type: HUNGER
+              level: 0
+              duration: 200
+            - type: SLOW
+              level: 0
+              duration: 100
+          message:
+            enabled: true
+            text: "§2丛林湿热难耐"
+            chance: 0.5
+            
+    # 沼泽生物群系
+    swamp:
+      # 沼泽中的特殊天气 - 毒雾
+      weather:
+        # 夜晚时可能触发毒雾
+        night:
+          enabled: true
+          chance: 0.1  # 10% 几率触发毒雾
+          potion-effects:
+            - type: POISON
+              level: 0
+              duration: 100
+            - type: SLOW
+              level: 0
+              duration: 200
+          message:
+            enabled: true
+            text: "§2沼泽中升起毒雾"
+            chance: 0.7
+            
+    # 下界荒地生物群系
+    nether_wastes:
+      # 下界中的特殊天气 - 火雨
+      weather:
+        # 任何时候都可能触发火雨
+        any:
+          enabled: true
+          chance: 0.05  # 5% 几率触发火雨
+          damage:
+            enabled: true
+            chance: 0.3
+            amount: [1.0, 3.0]
+          commands:
+            list:
+              - "particle minecraft:lava ~ ~10 ~ 0.5 0.5 0.5 0.1 5 force"
+              - "particle minecraft:flame ~ ~10 ~ 1 1 1 0.1 10 force"
+          message:
+            enabled: true
+            text: "§c下界火雨！小心躲避！"
+            chance: 0.8
 
 # 天气效果配置
 effects:

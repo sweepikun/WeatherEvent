@@ -17,6 +17,7 @@ public class BiomeWeatherManager {
     
     private final WeatherEvent plugin;
     private final Map<String, Map<String, BaseWeatherEffect>> biomeWeatherEffects;
+    private final Map<String, AdvancedBiomeWeatherEffect> advancedBiomeWeatherEffects;
     private boolean enabled;
     
     /**
@@ -26,6 +27,7 @@ public class BiomeWeatherManager {
     public BiomeWeatherManager(WeatherEvent plugin) {
         this.plugin = plugin;
         this.biomeWeatherEffects = new HashMap<>();
+        this.advancedBiomeWeatherEffects = new HashMap<>();
         this.enabled = false;
     }
     
@@ -41,6 +43,7 @@ public class BiomeWeatherManager {
         
         // 清除现有效果
         biomeWeatherEffects.clear();
+        advancedBiomeWeatherEffects.clear();
         
         ConfigurationSection biomesSection = config.getConfigurationSection("biomes");
         if (biomesSection == null) return;
@@ -50,6 +53,14 @@ public class BiomeWeatherManager {
             ConfigurationSection biomeSection = biomesSection.getConfigurationSection(biomeName);
             if (biomeSection == null) continue;
             
+            // 创建高级生物群系天气效果
+            AdvancedBiomeWeatherEffect advancedEffect = new AdvancedBiomeWeatherEffect(plugin, biomeName, biomeSection);
+            if (advancedEffect.isEnabled()) {
+                advancedBiomeWeatherEffects.put(biomeName.toUpperCase(), advancedEffect);
+                plugin.getLogger().info("已加载生物群系 " + biomeName + " 的高级天气效果");
+            }
+            
+            // 保留原有的简单效果加载逻辑
             Map<String, BaseWeatherEffect> weatherEffects = new HashMap<>();
             
             // 加载该生物群系下的不同天气效果
@@ -74,6 +85,7 @@ public class BiomeWeatherManager {
         }
         
         plugin.getLogger().info("已加载 " + biomeWeatherEffects.size() + " 个生物群系的天气效果");
+        plugin.getLogger().info("已加载 " + advancedBiomeWeatherEffects.size() + " 个生物群系的高级天气效果");
     }
     
     /**
@@ -111,7 +123,13 @@ public class BiomeWeatherManager {
         // 获取当前世界的天气状态
         String weatherType = getWeatherType(world);
         
-        // 查找对应的生物群系天气效果
+        // 应用高级生物群系天气效果
+        AdvancedBiomeWeatherEffect advancedEffect = advancedBiomeWeatherEffects.get(biomeName);
+        if (advancedEffect != null) {
+            advancedEffect.apply(player, world);
+        }
+        
+        // 应用传统的生物群系天气效果
         Map<String, BaseWeatherEffect> weatherEffects = biomeWeatherEffects.get(biomeName);
         if (weatherEffects != null) {
             BaseWeatherEffect effect = weatherEffects.get(weatherType);

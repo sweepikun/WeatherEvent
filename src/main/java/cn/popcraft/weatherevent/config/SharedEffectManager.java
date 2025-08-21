@@ -54,6 +54,7 @@ public class SharedEffectManager {
      * @param effectId 效果ID
      * @return 是否成功应用
      */
+    @SuppressWarnings("unchecked")
     public boolean applySharedEffect(Player player, String effectId) {
         ConfigurationSection effectConfig = getSharedEffect(effectId);
         if (effectConfig == null) return false;
