@@ -1,6 +1,14 @@
 package cn.popcraft.weatherevent.listeners;
 
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import net.md_5.bungee.api.ChatMessageType;
+import net.md_5.bungee.api.chat.TextComponent;
+import org.bukkit.entity.Player;
+
 import cn.popcraft.weatherevent.WeatherEvent;
+import net.md_5.bungee.api.ChatMessageType;
+import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -31,6 +39,9 @@ public class PlayerListener implements Listener {
         if (plugin.getConfig().getBoolean("send-weather-info-on-join", true)) {
             sendWeatherInfo(player);
         }
+        
+        // 检查是否下雨并触发打滑效果
+        checkRainSlip(player);
     }
     
     @EventHandler
@@ -50,12 +61,46 @@ public class PlayerListener implements Listener {
         if (plugin.getConfig().getBoolean("send-weather-info-on-world-change", true)) {
             sendWeatherInfo(player);
         }
+        
+        // 检查是否下雨并触发打滑效果
+        checkRainSlip(player);
     }
     
     /**
      * 向玩家发送当前天气和时间状态信息
      * @param player 目标玩家
      */
+    /**
+     * 检查是否下雨并随机触发打滑效果
+     * @param player 目标玩家
+     */
+    private void checkRainSlip(Player player) {
+        // 检查是否在主世界
+        if (plugin.getConfig().getBoolean("main-world-only", true) && 
+            !player.getWorld().getName().equals(plugin.getConfig().getString("main-world-name", "world"))) {
+            return;
+        }
+        
+        // 检查是否下雨
+        if (player.getWorld().hasStorm()) {
+            // 随机触发打滑效果（20%概率）
+            if (Math.random() < 0.2) {
+                // 打滑效果：击退玩家并发送提示消息
+                player.setVelocity(player.getLocation().getDirection().multiply(-0.5).setY(0.2));
+                player.sendMessage(org.bukkit.ChatColor.translateAlternateColorCodes('&', 
+                    plugin.getConfig().getString("messages.rain-slip", "&c哎呀！下雨天路滑，你摔倒了！")));
+                
+                // 播放配置的声音
+                if (plugin.getConfig().isSet("effects.rain-slip-sound.sound")) {
+                    String sound = plugin.getConfig().getString("effects.rain-slip-sound.sound");
+                    float volume = (float) plugin.getConfig().getDouble("effects.rain-slip-sound.volume", 1.0);
+                    float pitch = (float) plugin.getConfig().getDouble("effects.rain-slip-sound.pitch", 1.0);
+                    player.playSound(player.getLocation(), sound, volume, pitch);
+                }
+            }
+        }
+    }
+    
     private void sendWeatherInfo(Player player) {
         // 检查是否只在主世界发送信息
         if (plugin.getConfig().getBoolean("main-world-only", true) && 
@@ -77,7 +122,7 @@ public class PlayerListener implements Listener {
             weatherInfo = plugin.getConfig().getString("messages.weather-info-clear", "当前天气：&e晴朗");
         }
         
-        player.sendMessage(org.bukkit.ChatColor.translateAlternateColorCodes('&', weatherInfo));
+        player.sendTitle("", org.bukkit.ChatColor.translateAlternateColorCodes('&', weatherInfo), 10, 70, 20);
         
         // 获取当前时间并发送时间信息
         if (plugin.getConfig().getBoolean("send-time-info", true)) {
@@ -94,7 +139,7 @@ public class PlayerListener implements Listener {
                 timeInfo = plugin.getConfig().getString("messages.time-info-night", "当前时间：&1夜晚");
             }
             
-            player.sendMessage(org.bukkit.ChatColor.translateAlternateColorCodes('&', timeInfo));
+            player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(org.bukkit.ChatColor.translateAlternateColorCodes('&', timeInfo)));
         }
     }
 }

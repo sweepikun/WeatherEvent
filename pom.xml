@@ -5,15 +5,15 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>cn.popcraft</groupId>
-    <artifactId>weatherevent</artifactId>
-    <version>1.0.0</version>
+    <artifactId>WeatherEvent</artifactId>
+    <version>1.1.0</version>
     <packaging>jar</packaging>
 
     <name>WeatherEvent</name>
     <description>动态天气效果系统，让天气影响游戏玩法</description>
 
     <properties>
-        <java.version>1.8</java.version>
+        <java.version>21.0.8</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 

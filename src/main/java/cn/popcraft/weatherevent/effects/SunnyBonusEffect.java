@@ -3,7 +3,7 @@ package cn.popcraft.weatherevent.effects;
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
-import org.bukkit.plugin.Plugin;
+import cn.popcraft.weatherevent.WeatherEvent;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
@@ -23,7 +23,7 @@ public class SunnyBonusEffect extends BaseWeatherEffect {
      * @param plugin 插件实例
      * @param config 效果配置
      */
-    public SunnyBonusEffect(Plugin plugin, ConfigurationSection config) {
+    public SunnyBonusEffect(WeatherEvent plugin, ConfigurationSection config) {
         super(plugin, "sunny_bonus", config);
     }
 

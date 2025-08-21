@@ -1,0 +1,35 @@
+# 天气事件插件配置
+
+# 是否在玩家加入时发送天气信息
+send-weather-info-on-join: true
+
+# 是否在切换世界时发送天气信息
+send-weather-info-on-world-change: true
+
+# 是否仅在主世界发送信息
+main-world-only: true
+
+# 主世界名称
+main-world-name: "world"
+
+# 是否发送时间信息
+send-time-info: true
+
+# 天气信息消息
+messages:
+  weather-info-thunder: "当前天气：&5雷暴"
+  weather-info-rain: "当前天气：&9下雨"
+  weather-info-clear: "当前天气：&e晴朗"
+  time-info-sunrise: "当前时间：&6日出"
+  time-info-day: "当前时间：&e白天"
+  time-info-sunset: "当前时间：&6日落"
+  time-info-night: "当前时间：&1夜晚"
+  rain-slip: "&c哎呀！下雨天路滑，你摔倒了！"
+
+# 效果触发声音配置
+effects:
+  # 下雨打滑效果的声音
+  rain-slip-sound:
+    sound: "entity.player.hurt"  # 声音资源路径
+    volume: 1.0                  # 音量
+    pitch: 1.0                   # 音高

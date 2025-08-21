@@ -1,9 +1,11 @@
 package cn.popcraft.weatherevent;
 
 import cn.popcraft.weatherevent.commands.WeatherCommand;
+import cn.popcraft.weatherevent.config.SharedEffectManager;
 import cn.popcraft.weatherevent.effects.EffectManager;
 import cn.popcraft.weatherevent.listeners.PlayerListener;
 import cn.popcraft.weatherevent.listeners.WeatherListener;
+import cn.popcraft.weatherevent.effects.BiomeWeatherManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
 /**
@@ -13,14 +15,23 @@ import org.bukkit.plugin.java.JavaPlugin;
 public class WeatherEvent extends JavaPlugin {
     
     private EffectManager effectManager;
+    private SharedEffectManager sharedEffectManager;
+    private BiomeWeatherManager biomeWeatherManager;
     
     @Override
     public void onEnable() {
         // 保存默认配置
         saveDefaultConfig();
         
+        // 初始化共享效果管理器
+        sharedEffectManager = new SharedEffectManager(this);
+        
+        // 初始化生物群系天气管理器
+        biomeWeatherManager = new BiomeWeatherManager(this);
+        biomeWeatherManager.loadFromConfig(getConfig().getConfigurationSection("biomes"));
+        
         // 初始化效果管理器
-        effectManager = new EffectManager(this);
+        effectManager = new EffectManager(this, biomeWeatherManager);
         
         // 加载效果
         effectManager.loadEffects();
@@ -44,6 +55,12 @@ public class WeatherEvent extends JavaPlugin {
         // 重新加载配置
         reloadConfig();
         
+        // 重新初始化共享效果管理器
+        sharedEffectManager = new SharedEffectManager(this);
+        
+        // 重新加载生物群系天气配置
+        biomeWeatherManager.loadFromConfig(getConfig().getConfigurationSection("biomes"));
+        
         // 重新加载效果
         effectManager.loadEffects();
         
@@ -66,5 +83,21 @@ public class WeatherEvent extends JavaPlugin {
      */
     public EffectManager getEffectManager() {
         return effectManager;
+    }
+    
+    /**
+     * 获取共享效果管理器
+     * @return 共享效果管理器实例
+     */
+    public SharedEffectManager getSharedEffectManager() {
+        return sharedEffectManager;
+    }
+    
+    /**
+     * 获取生物群系天气管理器
+     * @return 生物群系天气管理器实例
+     */
+    public BiomeWeatherManager getBiomeWeatherManager() {
+        return biomeWeatherManager;
     }
 }

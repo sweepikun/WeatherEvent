@@ -3,7 +3,7 @@ package cn.popcraft.weatherevent.effects;
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
-import org.bukkit.plugin.Plugin;
+import cn.popcraft.weatherevent.WeatherEvent;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
@@ -21,7 +21,7 @@ public class RainSlowEffect extends BaseWeatherEffect {
      * @param plugin 插件实例
      * @param config 效果配置
      */
-    public RainSlowEffect(Plugin plugin, ConfigurationSection config) {
+    public RainSlowEffect(WeatherEvent plugin, ConfigurationSection config) {
         super(plugin, "rain_slow", config);
     }
 

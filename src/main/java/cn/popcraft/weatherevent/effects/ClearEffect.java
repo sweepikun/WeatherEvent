@@ -35,7 +35,8 @@ public class ClearEffect extends BaseWeatherEffect {
         
         // 设置默认命令，确保字段不为空
         if (commands == null || !commands.containsKey("list") || ((List<?>) commands.get("list")).isEmpty()) {
-            addCommand("title %player% subtitle {\"text\":\"天气真好！\",\"color\":\"green\"}");
+            addCommand("playsound minecraft:entity.experience_orb.pickup master %player% ~ ~ ~ 100 1");
+            addCommand("tellraw %player% {\"text\":\"天气真好！\",\"color\":\"green\"}");
         }
     }
     
