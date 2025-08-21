@@ -1,10 +1,14 @@
 package cn.popcraft.weatherevent.config;
 
 import cn.popcraft.weatherevent.WeatherEvent;
+import cn.popcraft.weatherevent.condition.ConditionChecker;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
+import org.bukkit.scheduler.BukkitRunnable;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -54,6 +58,19 @@ public class SharedEffectManager {
         ConfigurationSection effectConfig = getSharedEffect(effectId);
         if (effectConfig == null) return false;
         
+        // 检查前置条件
+        if (effectConfig.isConfigurationSection("conditions")) {
+            ConfigurationSection conditionsSection = effectConfig.getConfigurationSection("conditions");
+            Map<String, Object> conditions = new HashMap<>();
+            for (String key : conditionsSection.getKeys(true)) {
+                conditions.put(key, conditionsSection.get(key));
+            }
+            
+            if (!ConditionChecker.checkPrerequisites(player, conditions)) {
+                return false; // 条件不满足，不应用效果
+            }
+        }
+        
         // 处理命令
         ConfigurationSection commandsSection = effectConfig.getConfigurationSection("commands");
         if (commandsSection != null) {
@@ -78,6 +95,71 @@ public class SharedEffectManager {
             }
         }
         
+        // 处理连锁效果
+        ConfigurationSection chainSection = effectConfig.getConfigurationSection("chain-effects");
+        if (chainSection != null) {
+            // 支持两种配置格式
+            if (chainSection.getList("") != null) {
+                List<Map<String, Object>> listData = (List<Map<String, Object>>) chainSection.getList("");
+                for (ChainEffect chainEffect : ChainEffect.fromConfig(listData)) {
+                    triggerChainEffect(player, chainEffect);
+                }
+            } else {
+                Map<String, Object> mapData = new HashMap<>();
+                for (String key : chainSection.getKeys(false)) {
+                    mapData.put(key, chainSection.get(key));
+                }
+                // 包装mapData以符合fromConfigMap的参数要求
+                Map<String, Map<String, Object>> wrappedMap = new HashMap<>();
+                for (Map.Entry<String, Object> entry : mapData.entrySet()) {
+                    if (entry.getValue() instanceof ConfigurationSection) {
+                        Map<String, Object> innerMap = new HashMap<>();
+                        ConfigurationSection innerSection = (ConfigurationSection) entry.getValue();
+                        for (String innerKey : innerSection.getKeys(true)) {
+                            innerMap.put(innerKey, innerSection.get(innerKey));
+                        }
+                        wrappedMap.put(entry.getKey(), innerMap);
+                    }
+                }
+                for (ChainEffect chainEffect : ChainEffect.fromConfigMap(wrappedMap)) {
+                    triggerChainEffect(player, chainEffect);
+                }
+            }
+        }
+        
         return true;
+    }
+    
+    /**
+     * 触发连锁效果
+     * @param player 玩家
+     * @param chainEffect 连锁效果配置
+     */
+    private void triggerChainEffect(Player player, ChainEffect chainEffect) {
+        // 检查触发几率
+        if (Math.random() > chainEffect.getChance()) {
+            return;
+        }
+        
+        // 检查条件
+        if (chainEffect.getConditions() != null && 
+            !ConditionChecker.checkPrerequisites(player, chainEffect.getConditions())) {
+            return;
+        }
+        
+        // 检查延迟
+        int delay = chainEffect.getDelay();
+        if (delay > 0) {
+            // 延迟触发
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    applySharedEffect(player, chainEffect.getEffectId());
+                }
+            }.runTaskLater(plugin, delay);
+        } else {
+            // 立即触发
+            applySharedEffect(player, chainEffect.getEffectId());
+        }
     }
 }

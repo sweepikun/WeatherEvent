@@ -16,16 +16,55 @@ main-world-name: "world"
 # 是否发送时间信息
 send-time-info: true
 
-# 天气信息消息
-messages:
-  weather-info-thunder: "当前天气：&5雷暴"
-  weather-info-rain: "当前天气：&9下雨"
-  weather-info-clear: "当前天气：&e晴朗"
-  time-info-sunrise: "当前时间：&6日出"
-  time-info-day: "当前时间：&e白天"
-  time-info-sunset: "当前时间：&6日落"
-  time-info-night: "当前时间：&1夜晚"
-  rain-slip: "&c哎呀！下雨天路滑，你摔倒了！"
+# 共享效果配置
+shared-effects:
+  # 雨天打滑效果
+  rain_slip:
+    # 前置条件 - 只有在雨天且在户外时才可能触发
+    conditions:
+      type: "weather"
+      weather: "rain"
+    commands:
+      list:
+        - "title %player% actionbar {\"text\":\"你滑倒了！\",\"color\":\"red\"}"
+        - "playsound minecraft:entity.player.hurt ambient %player% ~ ~ ~ 1.0 1.0"
+    damage:
+      enabled: true
+      chance: 0.8
+      amount: 1.0
+      
+  # 小型闪电打击效果
+  small_lightning_strike:
+    commands:
+      list:
+        - "execute at %player% run particle minecraft:electric_spark ~ ~1 ~ 0.5 0.5 0.5 0.1 10 force"
+        - "playsound minecraft:entity.lightning_bolt.thunder ambient %player% ~ ~ ~ 0.5 1.0"
+    damage:
+      enabled: true
+      chance: 0.3
+      amount: [1.0, 3.0]
+      
+  # 治疗效果
+  healing_effect:
+    commands:
+      list:
+        - "particle minecraft:heart ~ ~1 ~ 0.5 0.5 0.5 0.1 5 force"
+    chain-effects:
+      # 连锁效果 - 治疗效果可能触发更强的治疗效果
+      strong_healing:
+        chance: 0.2
+        effect-id: "strong_healing_effect"
+        delay: 40  # 延迟2秒触发
+        conditions:
+          type: "has_potion_effect"
+          effect_type: "REGENERATION"
+
+  # 强力治疗效果
+  strong_healing_effect:
+    commands:
+      list:
+        - "particle minecraft:heart ~ ~1 ~ 0.5 0.5 0.5 0.1 10 force"
+        - "title %player% actionbar {\"text\":\"强力治疗！\",\"color\":\"green\"}"
 
 # 生物群系天气效果配置
 biome-weather:
@@ -91,6 +130,10 @@ effects:
         bonus_effect:
           chance: 0.2  # 20% 几率触发
           effect-id: "healing_effect"
+          delay: 20  # 延迟1秒触发
+          conditions:
+            type: "has_potion_effect"
+            effect_type: "SPEED"
 
   # 雨天效果
   rain:
@@ -144,6 +187,11 @@ effects:
         slip_effect:
           chance: 0.25  # 25% 几率触发
           effect-id: "rain_slip"
+          delay: 10  # 延迟0.5秒触发
+          conditions:
+            type: "light_level"
+            min: 0
+            max: 7
     # 雨天打滑效果
     slip:
       enabled: true
@@ -180,6 +228,10 @@ effects:
         lightning_strike:
           chance: 0.3  # 30% 几率触发
           effect-id: "small_lightning_strike"
+          delay: 5  # 延迟0.25秒触发
+          conditions:
+            type: "random"
+            chance: 0.5
     # 伤害配置
     damage:
       enabled: true
@@ -200,380 +252,32 @@ effects:
     # 动作栏消息
     action-bar:
       enabled: true
-      text: "§8夜幕降临，小心周围的怪物"
-      chance: 0.6
-    # 命令
-    commands:
-      chance: 0.1  # 10% 几率执行
-      list:
-        - "playsound minecraft:ambient.cave ambient %player% ~ ~ ~ 0.3 0.8"
-        - "particle minecraft:smoke ~ ~1 ~ 1 0.5 1 0.01 10 force"
-      # 连锁效果 - 命令执行后有几率触发其他效果
-      chain-effects:
-        night_creature:
-          chance: 0.15  # 15% 几率触发
-          effect-id: "small_lightning_strike"
-
-  # 洞穴效果 - 自定义天气效果
-  cave:
-    enabled: true
-    # 高度限制 - 只在地下生效
-    min-height: -64
-    max-height: 40
-    # 光照限制 - 只在黑暗环境中生效
-    min-light: 0
-    max-light: 7
-    # 药水效果
-    potion-effects:
-      - type: NIGHT_VISION
-        level: 0
-        duration: 400
-      - type: FAST_DIGGING
-        level: 0
-        duration: 200
-    # 随机效果
-    random-effects:
-      chance: 0.15
-      effects:
-        - type: DAMAGE_RESISTANCE
-          level: 0
-          duration: 100
-    # 声音效果
-    sound:
-      enabled: true
-      resource: "ambient.cave"
-      volume: 0.5
-      pitch: 1.0
-      chance: 0.4
-    # 命令
-    commands:
-      chance: 0.07  # 7% 几率执行
-      list:
-        - "title %player% title {\"text\":\"深入洞穴\",\"color\":\"dark_gray\"}"
-        - "effect give %player% minecraft:haste 10 0 true"
-      # 连锁效果 - 命令执行后有几率触发其他效果
-      chain-effects:
-        cave_discovery:
-          chance: 0.1  # 10% 几率触发
-          effect-id: "healing_effect"
-
-# 共享效果定义 - 可以被其他效果引用
-shared-effects:
-  # 小型闪电效果
-  small_lightning_strike:
-    # 声音
-    sound:
-      enabled: true
-      resource: "entity.lightning_bolt.impact"
-      volume: 1.0
-      pitch: 0.8
-    # 伤害
-    damage:
-      enabled: true
-      chance: 0.6
-      amount: [1.0, 3.0]  # 范围随机 1-3 点伤害
-    # 消息
-    message:
-      enabled: true
-      text: "§c你被闪电击中了！"
-      chance: 1.0
-  
-  # 治愈效果
-  healing_effect:
-    # 药水效果
-    potion-effects:
-      - type: REGENERATION
-        level: 1
-        duration: 100
-      - type: SATURATION
-        level: 0
-        duration: 60
-    # 标题
-    title:
-      enabled: true
-      text: "§a治愈"
-      subtitle: "§7你感到一阵温暖"
-      fadeIn: 10
-      stay: 40
-      fadeOut: 10
-      chance: 1.0
-  
-  # 下雨打滑效果
-  rain_slip:
-    # 声音
-    sound:
-      enabled: true
-      resource: "entity.player.hurt"
-      volume: 1.0
-      pitch: 1.0
-      chance: 1.0
-    # 伤害
-    damage:
-      enabled: true
+      text: "§1夜晚降临"
       chance: 0.3
-      amount: 1.0
-    # 消息
-    message:
-      enabled: true
-      text: "&c哎呀！下雨天路滑，你摔倒了！"
-      chance: 1.0
-
-# 生物群系特定效果配置
-biomes:
-  # 沙漠生物群系
-  DESERT:
-    enabled: true
-    weather:
-      # 沙漠晴天效果
-      clear:
-        enabled: true
-        potion-effects:
-          - type: FIRE_RESISTANCE
-            level: 0
-            duration: 200
-          - type: SPEED
-            level: 1
-            duration: 100
-        message:
-          enabled: true
-          text: "&e沙漠中的阳光异常强烈！"
-          chance: 0.5
-        sound:
-          enabled: true
-          resource: "block.sand.step"
-          volume: 1.0
-          pitch: 1.0
-          chance: 0.3
-      
-      # 沙漠雨天效果（沙尘暴）
-      rain:
-        enabled: true
-        potion-effects:
-          - type: BLINDNESS
-            level: 0
-            duration: 100
-          - type: SLOW
-            level: 1
-            duration: 150
-        message:
-          enabled: true
-          text: "&6沙尘暴来袭！视线受阻！"
-          chance: 0.7
-        sound:
-          enabled: true
-          resource: "entity.ghast.ambient"
-          volume: 0.5
-          pitch: 0.8
-          chance: 0.4
-        damage:
-          enabled: true
-          chance: 0.2
-          amount: 1.0
-  
-  # 森林生物群系
-  FOREST:
-    enabled: true
-    weather:
-      # 森林晴天效果
-      clear:
-        enabled: true
-        potion-effects:
-          - type: REGENERATION
-            level: 0
-            duration: 100
-          - type: SATURATION
-            level: 0
-            duration: 60
-        message:
-          enabled: true
-          text: "&a森林中的阳光透过树叶洒落，你感到精力充沛！"
-          chance: 0.4
-        sound:
-          enabled: true
-          resource: "entity.experience_orb.pickup"
-          volume: 0.8
-          pitch: 1.2
-          chance: 0.5
-      
-      # 森林雨天效果
-      rain:
-        enabled: true
-        potion-effects:
-          - type: WATER_BREATHING
-            level: 0
-            duration: 200
-        message:
-          enabled: true
-          text: "&9雨水滋润着森林，空气清新！"
-          chance: 0.6
-        sound:
-          enabled: true
-          resource: "weather.rain"
-          volume: 1.0
-          pitch: 1.0
-          chance: 0.7
-      
-      # 森林雷暴效果
-      thunder:
-        enabled: true
-        potion-effects:
-          - type: SPEED
-            level: 1
-            duration: 100
-          - type: JUMP
-            level: 1
-            duration: 100
-        message:
-          enabled: true
-          text: "&c小心森林中的闪电！"
-          chance: 0.8
-        sound:
-          enabled: true
-          resource: "entity.lightning_bolt.thunder"
-          volume: 1.0
-          pitch: 1.0
-          chance: 0.9
-        damage:
-          enabled: true
-          chance: 0.3
-          amount: 2.0
-
-  # 雪原生物群系
-  SNOWY_TUNDRA:
-    enabled: true
-    weather:
-      # 雪原晴天效果
-      clear:
-        enabled: true
-        potion-effects:
-          - type: NIGHT_VISION
-            level: 0
-            duration: 300
-        message:
-          enabled: true
-          text: "&f雪地反射的阳光非常刺眼！"
-          chance: 0.5
-        sound:
-          enabled: true
-          resource: "block.snow.step"
-          volume: 0.8
-          pitch: 1.2
-          chance: 0.4
-      
-      # 雪原雨天/雪天效果
-      rain:
-        enabled: true
-        potion-effects:
-          - type: SLOW
-            level: 1
-            duration: 200
-          - type: WEAKNESS
-            level: 0
-            duration: 150
-        message:
-          enabled: true
-          text: "&b暴风雪中行走变得困难！"
-          chance: 0.7
-        sound:
-          enabled: true
-          resource: "weather.rain"
-          volume: 0.5
-          pitch: 0.8
-          chance: 0.6
-        damage:
-          enabled: true
+    # 命令
+    commands:
+      chance: 0.1
+      list:
+        - "particle minecraft:soul_fire_flame ~ ~1 ~ 0.5 0.5 0.5 0.1 5 force"
+      # 连锁效果
+      chain-effects:
+        # 夜晚效果可能触发隐身效果
+        invisibility:
           chance: 0.1
-          amount: 0.5
+          effect-id: "night_invisibility"
+          delay: 60  # 延迟3秒触发
 
-  # 沼泽生物群系
-  SWAMP:
-    enabled: true
-    weather:
-      # 沼泽晴天效果
-      clear:
-        enabled: true
-        potion-effects:
-          - type: WATER_BREATHING
-            level: 0
-            duration: 200
-        message:
-          enabled: true
-          text: "&2沼泽地的空气潮湿而闷热。"
-          chance: 0.4
-        sound:
-          enabled: true
-          resource: "entity.slime.squish"
-          volume: 0.3
-          pitch: 1.0
-          chance: 0.3
-      
-      # 沼泽雨天效果
-      rain:
-        enabled: true
-        potion-effects:
-          - type: POISON
-            level: 0
-            duration: 60
-          - type: SLOW
-            level: 0
-            duration: 100
-        message:
-          enabled: true
-          text: "&5雨水使沼泽更加泥泞，小心毒素！"
-          chance: 0.6
-        sound:
-          enabled: true
-          resource: "entity.slime.attack"
-          volume: 0.5
-          pitch: 0.8
-          chance: 0.5
-        damage:
-          enabled: true
-          chance: 0.15
-          amount: 1.0
-
-  # 蘑菇岛生物群系
-  MUSHROOM_FIELDS:
-    enabled: true
-    weather:
-      # 蘑菇岛晴天效果
-      clear:
-        enabled: true
-        potion-effects:
-          - type: SATURATION
-            level: 0
-            duration: 100
-          - type: NIGHT_VISION
-            level: 0
-            duration: 200
-        message:
-          enabled: true
-          text: "&d蘑菇岛的神奇能量环绕着你！"
-          chance: 0.5
-        sound:
-          enabled: true
-          resource: "block.fungus.break"
-          volume: 0.8
-          pitch: 1.0
-          chance: 0.4
-      
-      # 蘑菇岛雨天效果
-      rain:
-        enabled: true
-        potion-effects:
-          - type: REGENERATION
-            level: 1
-            duration: 100
-          - type: SATURATION
-            level: 1
-            duration: 100
-        message:
-          enabled: true
-          text: "&d雨水滋润着蘑菇，释放出治愈能量！"
-          chance: 0.6
-        sound:
-          enabled: true
-          resource: "entity.experience_orb.pickup"
-          volume: 0.8
-          pitch: 1.2
-          chance: 0.5
+# 消息配置
+messages:
+  weather-info-thunder: "当前天气：&5雷暴"
+  weather-info-rain: "当前天气：&9下雨"
+  weather-info-clear: "当前天气：&e晴朗"
+  time-info-sunrise: "当前时间：&6日出"
+  time-info-day: "当前时间：&e白天"
+  time-info-sunset: "当前时间：&6日落"
+  time-info-night: "当前时间：&1夜晚"
+  rain-slip: "&c哎呀！下雨天路滑，你摔倒了！"
+  rain-start: "&9开始下雨了！"
+  rain-stop: "&e雨停了，天气转晴！"
+  thunder-start: "&5雷暴开始了，小心闪电！"
+  thunder-stop: "&e雷暴结束了！"

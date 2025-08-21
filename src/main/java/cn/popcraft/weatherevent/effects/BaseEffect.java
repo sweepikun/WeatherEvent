@@ -1,14 +1,19 @@
 package cn.popcraft.weatherevent.effects;
 
 import cn.popcraft.weatherevent.WeatherEvent;
+import cn.popcraft.weatherevent.config.ChainEffect;
+import cn.popcraft.weatherevent.condition.ConditionChecker;
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.Random;
 
 /**
@@ -24,6 +29,7 @@ public abstract class BaseEffect implements WeatherEffect {
     protected final String id;
     protected final String description;
     protected boolean enabled;
+    protected List<ChainEffect> chainEffects;
     protected List<PotionEffect> potionEffects;
     protected List<PotionEffect> randomEffects;
     protected double randomEffectChance;
@@ -44,6 +50,7 @@ public abstract class BaseEffect implements WeatherEffect {
         this.random = new Random();
         this.potionEffects = new ArrayList<>();
         this.randomEffects = new ArrayList<>();
+        this.chainEffects = new ArrayList<>();
         this.commands = new ArrayList<>();
         this.randomEffectChance = 0.0;
         this.commandChance = 0.0;
@@ -129,16 +136,45 @@ public abstract class BaseEffect implements WeatherEffect {
     }
 
     /**
-     * 加载命令
+     * 加载命令和连锁效果
      * @param config 命令配置部分
      */
     protected void loadCommands(ConfigurationSection config) {
         commands.clear();
-        commandChance = 0.0;
+        chainEffects.clear();
+        
         if (config == null) return;
         
         commandChance = config.getDouble("chance", 0.0);
         commands = config.getStringList("list");
+        
+        // 加载连锁效果
+        if (config.isConfigurationSection("chain-effects")) {
+            ConfigurationSection chainSection = config.getConfigurationSection("chain-effects");
+            // 支持两种配置格式
+            if (chainSection.getList("") != null) {
+                List<Map<String, Object>> listData = (List<Map<String, Object>>) chainSection.getList("");
+                chainEffects = ChainEffect.fromConfig(listData);
+            } else {
+                Map<String, Object> mapData = new HashMap<>();
+                for (String key : chainSection.getKeys(false)) {
+                    mapData.put(key, chainSection.get(key));
+                }
+                // 包装mapData以符合fromConfigMap的参数要求
+                Map<String, Map<String, Object>> wrappedMap = new HashMap<>();
+                for (Map.Entry<String, Object> entry : mapData.entrySet()) {
+                    if (entry.getValue() instanceof ConfigurationSection) {
+                        Map<String, Object> innerMap = new HashMap<>();
+                        ConfigurationSection innerSection = (ConfigurationSection) entry.getValue();
+                        for (String innerKey : innerSection.getKeys(true)) {
+                            innerMap.put(innerKey, innerSection.get(innerKey));
+                        }
+                        wrappedMap.put(entry.getKey(), innerMap);
+                    }
+                }
+                chainEffects = ChainEffect.fromConfigMap(wrappedMap);
+            }
+        }
     }
 
     /**
@@ -189,13 +225,50 @@ public abstract class BaseEffect implements WeatherEffect {
     }
 
     /**
-     * 执行命令
-     * @param player 目标玩家
+     * 执行命令并检查是否需要触发连锁效果
+     * @param player 玩家
      * @param command 命令
      */
     protected void executeCommand(Player player, String command) {
         String processedCommand = command.replace("%player%", player.getName());
         plugin.getServer().dispatchCommand(plugin.getServer().getConsoleSender(), processedCommand);
+        
+        // 触发连锁效果
+        triggerChainEffects(player);
+    }
+
+    /**
+     * 触发连锁效果
+     * @param player 玩家
+     */
+    protected void triggerChainEffects(Player player) {
+        for (ChainEffect chainEffect : chainEffects) {
+            // 检查触发几率
+            if (Math.random() > chainEffect.getChance()) {
+                continue;
+            }
+            
+            // 检查条件
+            if (chainEffect.getConditions() != null && 
+                !ConditionChecker.checkPrerequisites(player, chainEffect.getConditions())) {
+                continue;
+            }
+            
+            // 检查延迟
+            int delay = chainEffect.getDelay();
+            if (delay > 0) {
+                // 延迟触发
+                new BukkitRunnable() {
+                    @Override
+                    public void run() {
+                        plugin.getSharedEffectManager().applySharedEffect(player, chainEffect.getEffectId());
+                    }
+                }.runTaskLater(plugin, delay);
+            } else {
+                // 立即触发
+                plugin.getSharedEffectManager().applySharedEffect(player, chainEffect.getEffectId());
+            }
+        }
     }
 
     /**
@@ -252,11 +325,29 @@ public abstract class BaseEffect implements WeatherEffect {
         return map;
     }
 
-    @Override
+    /**
+     * 获取命令配置
+     * @return 命令配置映射
+     */
     public Map<String, Object> getCommands() {
         Map<String, Object> map = new HashMap<>();
         map.put("chance", commandChance);
         map.put("list", commands);
+        
+        if (!chainEffects.isEmpty()) {
+            List<Map<String, Object>> chainEffectMaps = new ArrayList<>();
+            for (ChainEffect effect : chainEffects) {
+                // 创建一个表示ChainEffect的映射
+                Map<String, Object> effectMap = new HashMap<>();
+                effectMap.put("chance", effect.getChance());
+                effectMap.put("effect-id", effect.getEffectId());
+                effectMap.put("delay", effect.getDelay());
+                effectMap.put("conditions", effect.getConditions());
+                chainEffectMaps.add(effectMap);
+            }
+            map.put("chain-effects", chainEffectMaps);
+        }
+        
         return map;
     }
 
