@@ -1,7 +1,7 @@
 package cn.popcraft.weatherevent.effects;
 
 import cn.popcraft.weatherevent.WeatherEvent;
-import cn.popcraft.weatherevent.config.SharedEffectManager;
+import cn.popcraft.weatherevent.manager.BiomeCacheManager;
 import org.bukkit.World;
 import org.bukkit.block.Biome;
 import org.bukkit.configuration.ConfigurationSection;
@@ -70,8 +70,8 @@ public class AdvancedBiomeWeatherEffect {
     public void apply(Player player, World world) {
         if (!enabled) return;
         
-        // 检查玩家是否在目标生物群系中
-        Biome playerBiome = player.getLocation().getBlock().getBiome();
+        // 检查玩家是否在目标生物群系中（使用缓存管理器）
+        Biome playerBiome = plugin.getEffectManager().getBiomeCacheManager().getPlayerBiome(player);
         if (!playerBiome.name().equals(biomeName)) {
             return;
         }

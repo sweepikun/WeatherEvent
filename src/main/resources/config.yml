@@ -16,6 +16,100 @@ main-world-name: "world"
 # 是否发送时间信息
 send-time-info: true
 
+# 权限组配置
+permissions:
+  groups:
+    # 默认组配置
+    default:
+      # 是否免疫所有效果
+      bypass-effects: false
+      # 效果强度乘数
+      effect-multiplier: 1.0
+      # 特定效果的启用/禁用状态
+      effects:
+        rain_slow: true
+        thunder_damage: true
+        sunny_bonus: true
+    
+    # VIP组配置
+    vip:
+      bypass-effects: false
+      effect-multiplier: 1.5
+      effects:
+        rain_slow: false  # VIP玩家免疫雨天减速效果
+        thunder_damage: true
+        sunny_bonus: true
+    
+    # 管理员组配置
+    admin:
+      bypass-effects: true  # 管理员免疫所有效果
+      effect-multiplier: 1.0
+      effects:
+        rain_slow: true
+        thunder_damage: true
+        sunny_bonus: true
+
+# 世界配置
+worlds:
+  # 主世界配置
+  world:
+    # 是否启用天气效果
+    enabled: true
+    # 效果强度乘数
+    effect-multiplier: 1.0
+    # 特定效果的启用/禁用状态
+    effects:
+      rain_slow: true
+      thunder_damage: true
+      sunny_bonus: true
+  
+  # 下界配置
+  world_nether:
+    enabled: true
+    effect-multiplier: 1.5  # 下界效果更强
+    effects:
+      rain_slow: false  # 下界没有雨天效果
+      thunder_damage: false  # 下界没有雷暴效果
+      sunny_bonus: true
+
+# 区域配置
+regions:
+  # 安全区配置
+  safe_zone:
+    # 世界名称（可选）
+    world: "world"
+    # 区域范围
+    area:
+      min-x: -100
+      min-y: 0
+      min-z: -100
+      max-x: 100
+      max-y: 256
+      max-z: 100
+    # 效果强度乘数
+    effect-multiplier: 0.5  # 安全区效果减半
+    # 特定效果的启用/禁用状态
+    effects:
+      rain_slow: false  # 安全区禁用雨天减速效果
+      thunder_damage: false  # 安全区禁用雷暴伤害效果
+      sunny_bonus: true
+
+  # 战斗区配置
+  pvp_zone:
+    world: "world"
+    area:
+      min-x: 200
+      min-y: 0
+      min-z: 200
+      max-x: 400
+      max-y: 256
+      max-z: 400
+    effect-multiplier: 2.0  # 战斗区效果增强
+    effects:
+      rain_slow: true
+      thunder_damage: true
+      sunny_bonus: true
+
 # 共享效果配置
 shared-effects:
   # 雨天打滑效果
@@ -102,6 +196,102 @@ shared-effects:
       enabled: true
       text: "§b暴风雪！寒冷刺骨！"
       chance: 0.6
+      
+  # 春节效果
+  spring_festival_effect:
+    potion-effects:
+      - type: LUCK
+        level: 1
+        duration: 400
+    commands:
+      list:
+        - "title %player% title {\"text\":\"春节快乐！\",\"color\":\"gold\"}"
+        - "particle minecraft:happy_villager ~ ~1 ~ 1 1 1 0.1 10 force"
+    message:
+      enabled: true
+      text: "§6春节期间，幸运加倍！"
+      chance: 1.0
+      
+  # 万圣节效果
+  halloween_effect:
+    potion-effects:
+      - type: SLOW
+        level: 0
+        duration: 200
+      - type: WEAKNESS
+        level: 0
+        duration: 200
+    commands:
+      list:
+        - "particle minecraft:ash ~ ~1 ~ 1 1 1 0.1 10 force"
+    message:
+      enabled: true
+      text: "§8万圣节的恐惧笼罩着你..."
+      chance: 0.8
+      
+  # 圣诞节效果
+  christmas_effect:
+    potion-effects:
+      - type: FIRE_RESISTANCE
+        level: 0
+        duration: 400
+    commands:
+      list:
+        - "particle minecraft:snowflake ~ ~1 ~ 1 1 1 0.1 20 force"
+    message:
+      enabled: true
+      text: "§f圣诞节的温暖保护着你"
+      chance: 0.7
+      
+  # 夏日炎炎效果
+  summer_heat_effect:
+    potion-effects:
+      - type: FIRE_RESISTANCE
+        level: 0
+        duration: 200
+    message:
+      enabled: true
+      text: "§c夏日炎炎，注意防暑！"
+      chance: 0.5
+      
+  # 满月效果
+  full_moon_effect:
+    potion-effects:
+      - type: SPEED
+        level: 0
+        duration: 200
+      - type: JUMP
+        level: 0
+        duration: 200
+    message:
+      enabled: true
+      text: "§f满月之夜，力量增强！"
+      chance: 0.6
+      
+  # 新月效果
+  new_moon_effect:
+    potion-effects:
+      - type: SLOW
+        level: 0
+        duration: 200
+      - type: WEAKNESS
+        level: 0
+        duration: 200
+    message:
+      enabled: true
+      text: "§8新月之夜，力量减弱..."
+      chance: 0.6
+      
+  # 资深玩家效果
+  veteran_player_effect:
+    potion-effects:
+      - type: DAMAGE_RESISTANCE
+        level: 0
+        duration: 200
+    message:
+      enabled: true
+      text: "§a感谢你的长期支持！"
+      chance: 0.5
 
 # 生物群系天气效果配置
 biome-weather:
@@ -216,11 +406,102 @@ biome-weather:
             enabled: true
             text: "§c下界火雨！小心躲避！"
             chance: 0.8
+            
+    # 苍白花园生物群系 (Minecraft 1.21新增)
+    pale_garden:
+      # 苍白花园中的特殊天气 - 神秘凋零
+      weather:
+        # 任何天气下都可能触发神秘凋零效果
+        any:
+          enabled: true
+          chance: 0.1  # 10% 几率触发
+          potion-effects:
+            - type: WITHER
+              level: 0
+              duration: 100
+            - type: SLOW
+              level: 0
+              duration: 100
+          message:
+            enabled: true
+            text: "§8苍白花园中弥漫着不祥的气息..."
+            chance: 0.7
+          commands:
+            list:
+              - "particle minecraft:ash ~ ~1 ~ 1 1 1 0.1 10 force"
+              - "particle minecraft:mycelium ~ ~1 ~ 1 1 1 0.1 5 force"
+        # 夜晚时的特殊效果
+        night:
+          enabled: true
+          chance: 0.15  # 15% 几率触发
+          potion-effects:
+            - type: BLINDNESS
+              level: 0
+              duration: 100
+            - type: WEAKNESS
+              level: 0
+              duration: 100
+          message:
+            enabled: true
+            text: "§8夜晚的苍白花园更加阴森可怖"
+            chance: 0.8
+          commands:
+            list:
+              - "particle minecraft:soul ~ ~1 ~ 1 1 1 0.1 10 force"
+
+# 时间相关效果配置
+time-effects:
+  # 特殊节日效果
+  special-events:
+    # 春节效果
+    spring_festival:
+      enabled: true
+      months: [2]  # 2月
+      days: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]  # 2月1日到15日
+      effect-id: "spring_festival_effect"
+      
+    # 万圣节效果
+    halloween:
+      enabled: true
+      months: [10]  # 10月
+      days: [31]  # 10月31日
+      effect-id: "halloween_effect"
+      
+    # 圣诞节效果
+    christmas:
+      enabled: true
+      months: [12]  # 12月
+      days: [24, 25, 26]  # 12月24-26日
+      effect-id: "christmas_effect"
+      
+    # 夏日炎炎效果
+    summer_heat:
+      enabled: true
+      months: [7, 8]  # 7月和8月
+      effect-id: "summer_heat_effect"
+  
+  # 月相效果
+  moon-phases:
+    full_moon:
+      enabled: true
+      effect-id: "full_moon_effect"
+    new_moon:
+      enabled: true
+      effect-id: "new_moon_effect"
+      
+  # 玩家在线时长效果
+  playtime:
+    veteran:  # 60分钟以上
+      enabled: true
+      minutes: 60
+      effect-id: "veteran_player_effect"
 
 # 天气效果配置
 effects:
   # 晴天效果
   clear:
+    # 冷却时间（秒），防止过于频繁触发
+    cooldown: 30
     enabled: true
     # 生物群系限制 - 只在这些生物群系中生效
     biomes:
@@ -283,6 +564,7 @@ effects:
 
   # 雨天效果
   rain:
+    cooldown: 30
     enabled: true
     # 生物群系限制
     biomes:
@@ -346,6 +628,7 @@ effects:
 
   # 雷暴效果
   thunder:
+    cooldown: 60
     enabled: true
     # 药水效果
     potion-effects:
@@ -386,6 +669,7 @@ effects:
 
   # 夜晚效果 - 自定义天气效果
   night:
+    cooldown: 30
     enabled: true
     # 光照限制 - 只在黑暗环境中生效
     min-light: 0

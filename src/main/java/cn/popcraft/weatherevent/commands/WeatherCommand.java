@@ -1,6 +1,8 @@
 package cn.popcraft.weatherevent.commands;
 
 import cn.popcraft.weatherevent.WeatherEvent;
+import cn.popcraft.weatherevent.effects.BaseWeatherEffect;
+import cn.popcraft.weatherevent.manager.StatisticsManager;
 import org.bukkit.ChatColor;
 import org.bukkit.World;
 import org.bukkit.command.Command;
@@ -12,7 +14,7 @@ import org.bukkit.entity.Player;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Map;
 
 /**
  * 天气命令处理类
@@ -21,7 +23,9 @@ import java.util.stream.Collectors;
 public class WeatherCommand implements CommandExecutor, TabCompleter {
     
     private final WeatherEvent plugin;
-    private final List<String> subCommands = Arrays.asList("clear", "rain", "thunder", "info", "effects", "reload");
+    private final List<String> subCommands = Arrays.asList(
+        "clear", "rain", "thunder", "info", "effects", "reload", "debug", "stats"
+    );
     
     public WeatherCommand(WeatherEvent plugin) {
         this.plugin = plugin;
@@ -49,6 +53,10 @@ public class WeatherCommand implements CommandExecutor, TabCompleter {
                 return handleEffectsCommand(sender);
             case "reload":
                 return handleReloadCommand(sender);
+            case "debug":
+                return handleDebugCommand(sender);
+            case "stats":
+                return handleStatsCommand(sender);
             default:
                 sendUsage(sender);
                 return true;
@@ -135,19 +143,41 @@ public class WeatherCommand implements CommandExecutor, TabCompleter {
             return true;
         }
         
-        // 获取当前天气状态
-        boolean isRaining = world.hasStorm();
-        boolean isThundering = world.isThundering();
-        
-        // 发送天气信息
-        sender.sendMessage(ChatColor.YELLOW + "世界 " + ChatColor.WHITE + world.getName() + ChatColor.YELLOW + " 的天气状态：");
-        
-        if (isThundering) {
-            sender.sendMessage(ChatColor.DARK_PURPLE + "雷暴");
-        } else if (isRaining) {
-            sender.sendMessage(ChatColor.BLUE + "下雨");
+        // 获取天气信息
+        String weatherInfo;
+        if (world.isThundering()) {
+            weatherInfo = ChatColor.translateAlternateColorCodes('&', 
+                plugin.getConfig().getString("messages.weather-info-thunder", "&5当前天气：雷暴"));
+        } else if (world.hasStorm()) {
+            weatherInfo = ChatColor.translateAlternateColorCodes('&', 
+                plugin.getConfig().getString("messages.weather-info-rain", "&9当前天气：下雨"));
         } else {
-            sender.sendMessage(ChatColor.YELLOW + "晴朗");
+            weatherInfo = ChatColor.translateAlternateColorCodes('&', 
+                plugin.getConfig().getString("messages.weather-info-clear", "&e当前天气：晴朗"));
+        }
+        
+        sender.sendMessage(weatherInfo);
+        
+        // 如果启用了时间信息，也发送时间信息
+        if (plugin.getConfig().getBoolean("send-time-info", true)) {
+            long time = world.getTime();
+            String timeInfo;
+            
+            if (time >= 0 && time < 1000) {
+                timeInfo = ChatColor.translateAlternateColorCodes('&', 
+                    plugin.getConfig().getString("messages.time-info-sunrise", "&6当前时间：日出"));
+            } else if (time >= 1000 && time < 12000) {
+                timeInfo = ChatColor.translateAlternateColorCodes('&', 
+                    plugin.getConfig().getString("messages.time-info-day", "&e当前时间：白天"));
+            } else if (time >= 12000 && time < 13000) {
+                timeInfo = ChatColor.translateAlternateColorCodes('&', 
+                    plugin.getConfig().getString("messages.time-info-sunset", "&6当前时间：日落"));
+            } else {
+                timeInfo = ChatColor.translateAlternateColorCodes('&', 
+                    plugin.getConfig().getString("messages.time-info-night", "&1当前时间：夜晚"));
+            }
+            
+            sender.sendMessage(timeInfo);
         }
         
         return true;
@@ -159,36 +189,12 @@ public class WeatherCommand implements CommandExecutor, TabCompleter {
             return true;
         }
         
-        // 发送效果信息
-        sender.sendMessage(ChatColor.YELLOW + "当前注册的效果：");
-        
-        // 获取所有注册的效果
-        plugin.getEffectManager().getEffects().forEach((id, effect) -> {
-            ChatColor color;
-            
-            // 根据效果类型设置颜色
-            if (id.contains("rain")) {
-                color = ChatColor.BLUE;
-            } else if (id.contains("thunder")) {
-                color = ChatColor.DARK_PURPLE;
-            } else if (id.contains("sunny") || id.contains("day")) {
-                color = ChatColor.YELLOW;
-            } else if (id.contains("sunset")) {
-                color = ChatColor.GOLD;
-            } else if (id.contains("night")) {
-                color = ChatColor.DARK_BLUE;
-            } else {
-                color = ChatColor.WHITE;
-            }
-            
-            // 显示效果状态
-            String status = effect.isEnabled() ? ChatColor.GREEN + "启用" : ChatColor.RED + "禁用";
-            
-            // 发送效果信息
-            sender.sendMessage(color + effect.getId() + ": " + 
-                               ChatColor.WHITE + effect.getDescription() + 
-                               ChatColor.GRAY + " [" + status + ChatColor.GRAY + "]");
-        });
+        // 显示当前加载的效果
+        sender.sendMessage(ChatColor.GOLD + "=== 当前加载的天气效果 ===");
+        for (BaseWeatherEffect effect : plugin.getEffectManager().getEffects().values()) {
+            sender.sendMessage(ChatColor.GREEN + "- " + effect.getId() + 
+                (effect.isEnabled() ? " (已启用)" : " (已禁用)"));
+        }
         
         return true;
     }
@@ -208,6 +214,89 @@ public class WeatherCommand implements CommandExecutor, TabCompleter {
         return true;
     }
     
+    private boolean handleDebugCommand(CommandSender sender) {
+        if (!(sender instanceof Player)) {
+            sender.sendMessage(ChatColor.RED + "只有玩家可以使用此命令！");
+            return true;
+        }
+        
+        if (!sender.hasPermission("weatherevent.command.debug")) {
+            sender.sendMessage(ChatColor.RED + "你没有权限使用此命令！");
+            return true;
+        }
+        
+        Player player = (Player) sender;
+        sender.sendMessage(ChatColor.GOLD + "=== WeatherEvent 调试信息 ===");
+        
+        // 显示当前世界信息
+        World world = player.getWorld();
+        sender.sendMessage(ChatColor.YELLOW + "世界: " + world.getName());
+        sender.sendMessage(ChatColor.YELLOW + "天气: " + 
+            (world.isThundering() ? "雷暴" : world.hasStorm() ? "下雨" : "晴天"));
+        sender.sendMessage(ChatColor.YELLOW + "时间: " + world.getTime());
+        
+        // 显示玩家所在生物群系（使用缓存）
+        org.bukkit.block.Biome biome = plugin.getEffectManager().getBiomeCacheManager().getPlayerBiome(player);
+        sender.sendMessage(ChatColor.YELLOW + "生物群系: " + biome.name());
+        
+        // 显示适用的效果
+        sender.sendMessage(ChatColor.GOLD + "适用的天气效果:");
+        for (BaseWeatherEffect effect : plugin.getEffectManager().getEffects().values()) {
+            if (effect.isApplicable(world)) {
+                sender.sendMessage(ChatColor.GREEN + "- " + effect.getId() + 
+                    (effect.isEnabled() ? " (已启用)" : " (已禁用)"));
+            }
+        }
+        
+        // 显示冷却信息
+        sender.sendMessage(ChatColor.GOLD + "冷却中的效果:");
+        boolean hasCooldowns = false;
+        for (BaseWeatherEffect effect : plugin.getEffectManager().getEffects().values()) {
+            if (plugin.getEffectManager().getCooldownManager().isOnCooldown(player, effect.getId())) {
+                long remaining = plugin.getEffectManager().getCooldownManager().getRemainingCooldown(player, effect.getId());
+                sender.sendMessage(ChatColor.RED + "- " + effect.getId() + " (" + (remaining/1000) + "秒后过期)");
+                hasCooldowns = true;
+            }
+        }
+        
+        if (!hasCooldowns) {
+            sender.sendMessage(ChatColor.GREEN + "没有正在冷却的效果");
+        }
+        
+        return true;
+    }
+    
+    private boolean handleStatsCommand(CommandSender sender) {
+        if (!sender.hasPermission("weatherevent.command.stats")) {
+            sender.sendMessage(ChatColor.RED + "你没有权限使用此命令！");
+            return true;
+        }
+        
+        sender.sendMessage(ChatColor.GOLD + "=== WeatherEvent 统计信息 ===");
+        
+        // 显示效果统计
+        Map<String, StatisticsManager.EffectStatistics> effectStats = 
+            plugin.getEffectManager().getStatisticsManager().getAllEffectStatistics();
+        
+        if (effectStats.isEmpty()) {
+            sender.sendMessage(ChatColor.YELLOW + "暂无效果触发统计");
+        } else {
+            sender.sendMessage(ChatColor.GOLD + "效果触发统计:");
+            for (StatisticsManager.EffectStatistics stats : effectStats.values()) {
+                sender.sendMessage(ChatColor.GREEN + "- " + stats.getEffectId() + 
+                    ": 触发" + stats.getTriggerCount() + "次, 成功" + 
+                    stats.getSuccessCount() + "次 (成功率: " + 
+                    String.format("%.2f", stats.getSuccessRate() * 100) + "%)");
+            }
+        }
+        
+        // 显示缓存信息
+        int cacheSize = plugin.getEffectManager().getBiomeCacheManager().getCacheSize();
+        sender.sendMessage(ChatColor.GOLD + "生物群系缓存大小: " + cacheSize);
+        
+        return true;
+    }
+
     private World getTargetWorld(CommandSender sender) {
         World world;
         
@@ -243,6 +332,8 @@ public class WeatherCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage(ChatColor.GOLD + "/weather info " + ChatColor.WHITE + "- 查询当前天气状态");
         sender.sendMessage(ChatColor.GOLD + "/weather effects " + ChatColor.WHITE + "- 查看当前天气效果");
         sender.sendMessage(ChatColor.GOLD + "/weather reload " + ChatColor.WHITE + "- 重新加载配置");
+        sender.sendMessage(ChatColor.GOLD + "/weather debug " + ChatColor.WHITE + "- 显示调试信息");
+        sender.sendMessage(ChatColor.GOLD + "/weather stats " + ChatColor.WHITE + "- 显示统计信息");
     }
     
     @Override
@@ -266,13 +357,16 @@ public class WeatherCommand implements CommandExecutor, TabCompleter {
                             return sender.hasPermission("weatherevent.command.effects");
                         case "reload":
                             return sender.hasPermission("weatherevent.command.reload");
+                        case "debug":
+                            return sender.hasPermission("weatherevent.command.debug");
+                        case "stats":
+                            return sender.hasPermission("weatherevent.command.stats");
                         default:
                             return true;
                     }
                 })
-                .collect(Collectors.toList());
+                .toList();
         }
-        
         return new ArrayList<>();
     }
 }

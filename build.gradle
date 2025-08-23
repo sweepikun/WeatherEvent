@@ -3,7 +3,7 @@ plugins {
 }
 
 group = 'cn.popcraft'
-version = '1.2.2-SNAPSHOT'
+version = '1.2.6-SNAPSHOT'
 description = 'Spigot Plugin'
 
 repositories {

@@ -1,5 +1,5 @@
 name: WeatherEvent
-version: 1.0.0
+version: 1.2.6
 main: cn.popcraft.weatherevent.WeatherEvent
 api-version: 1.13
 description: 动态天气效果系统，让天气影响游戏玩法
@@ -8,7 +8,7 @@ author: PopCraft
 commands:
   weather:
     description: 天气控制命令
-    usage: /weather <clear|rain|thunder|info|effects|reload>
+    usage: /weather <clear|rain|thunder|info|effects|reload|debug|stats>
     aliases: [we]
 
 permissions:
@@ -30,6 +30,12 @@ permissions:
   weatherevent.command.reload:
     description: 允许使用 /weather reload 命令
     default: op
+  weatherevent.command.debug:
+    description: 允许使用 /weather debug 命令
+    default: op
+  weatherevent.command.stats:
+    description: 允许使用 /weather stats 命令
+    default: op
   weatherevent.bypass:
     description: 免疫天气效果
     default: false
@@ -43,4 +49,6 @@ permissions:
       weatherevent.command.info: true
       weatherevent.command.effects: true
       weatherevent.command.reload: true
+      weatherevent.command.debug: true
+      weatherevent.command.stats: true
       weatherevent.bypass: true

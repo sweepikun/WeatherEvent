@@ -1,6 +1,11 @@
 package cn.popcraft.weatherevent.effects;
 
 import cn.popcraft.weatherevent.WeatherEvent;
+import cn.popcraft.weatherevent.manager.BiomeCacheManager;
+import cn.popcraft.weatherevent.manager.CooldownManager;
+import cn.popcraft.weatherevent.manager.PermissionManager;
+import cn.popcraft.weatherevent.manager.RegionManager;
+import cn.popcraft.weatherevent.manager.StatisticsManager;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.block.Biome;
@@ -35,6 +40,24 @@ public class EffectManager implements Listener {
     // 生物群系天气管理器
     private final BiomeWeatherManager biomeWeatherManager;
     
+    // 增强的时间效果管理器
+    private final EnhancedTimeEffectManager enhancedTimeEffectManager;
+    
+    // 权限管理器
+    private final PermissionManager permissionManager;
+    
+    // 冷却管理器
+    private final CooldownManager cooldownManager;
+    
+    // 区域管理器
+    private final RegionManager regionManager;
+    
+    // 生物群系缓存管理器
+    private final BiomeCacheManager biomeCacheManager;
+    
+    // 统计管理器
+    private final StatisticsManager statisticsManager;
+    
     // 内部类，用于存储世界的天气状态
     private static class WeatherState {
         boolean isRaining;
@@ -57,6 +80,12 @@ public class EffectManager implements Listener {
         this.worldWeatherStates = new HashMap<>();
         this.updateInterval = 20; // 默认每秒更新一次
         this.biomeWeatherManager = biomeWeatherManager;
+        this.enhancedTimeEffectManager = new EnhancedTimeEffectManager(plugin);
+        this.permissionManager = new PermissionManager(plugin);
+        this.cooldownManager = new CooldownManager();
+        this.regionManager = new RegionManager(plugin);
+        this.biomeCacheManager = new BiomeCacheManager(plugin.getLogger());
+        this.statisticsManager = new StatisticsManager(plugin);
     }
     
     /**
@@ -282,18 +311,52 @@ public class EffectManager implements Listener {
     private void updateEffects() {
         // 对每个世界应用效果
         for (World world : Bukkit.getWorlds()) {
+            // 检查世界是否启用天气效果
+            if (!regionManager.isWorldEnabled(world)) {
+                continue;
+            }
+            
             // 获取适用于当前世界的效果
             List<BaseWeatherEffect> applicableEffects = new ArrayList<>();
             for (BaseWeatherEffect effect : effects.values()) {
-                if (effect.isApplicable(world)) {
+                if (effect.isApplicable(world) && regionManager.isEffectEnabledInWorld(world, effect.getId())) {
                     applicableEffects.add(effect);
                 }
             }
             
             // 对世界中的每个玩家应用效果
             for (Player player : world.getPlayers()) {
+                // 更新玩家会话信息
+                enhancedTimeEffectManager.updatePlayerSession(player);
+                
+                // 检查玩家权限
+                PermissionManager.GroupEffectConfig groupConfig = permissionManager.getPlayerGroupConfig(player);
+                if (groupConfig.isBypassEffects()) {
+                    continue; // 玩家免疫所有效果
+                }
+                
+                // 应用时间相关效果
+                applyTimeRelatedEffects(player, world);
+                
                 for (BaseWeatherEffect effect : applicableEffects) {
-                    effect.apply(player, world);
+                    // 记录效果触发
+                    statisticsManager.recordEffectTrigger(effect.getId(), player);
+                    
+                    // 检查效果权限和冷却
+                    if (!groupConfig.shouldSkipEffect(effect.getId()) && 
+                        !cooldownManager.isOnCooldown(player, effect.getId()) &&
+                        regionManager.isEffectEnabledInRegion(player, effect.getId())) {
+                        effect.apply(player, world);
+                        
+                        // 设置冷却时间（如果配置了）
+                        ConfigurationSection effectConfig = plugin.getConfig().getConfigurationSection("effects." + effect.getId());
+                        if (effectConfig != null) {
+                            int cooldownSeconds = effectConfig.getInt("cooldown", 0);
+                            if (cooldownSeconds > 0) {
+                                cooldownManager.setCooldown(player, effect.getId(), cooldownSeconds * 1000L);
+                            }
+                        }
+                    }
                 }
                 
                 // 应用生物群系天气效果
@@ -305,6 +368,24 @@ public class EffectManager implements Listener {
                 executeWeatherCommands(player, world);
             }
         }
+    }
+    
+    /**
+     * 应用时间相关效果
+     * @param player 玩家
+     * @param world 世界
+     */
+    private void applyTimeRelatedEffects(Player player, World world) {
+        // 应用特殊事件效果
+        enhancedTimeEffectManager.applySpecialEventEffects(player, world);
+        
+        // 获取并应用月相效果（可以通过配置启用/禁用）
+        String moonPhaseEffect = enhancedTimeEffectManager.getMoonPhaseEffect(world);
+        // 这里可以实现具体的月相效果应用逻辑
+        
+        // 获取并应用基于在线时长的效果
+        String playtimeEffect = enhancedTimeEffectManager.getPlaytimeEffect(player);
+        // 这里可以实现具体的在线时长效果应用逻辑
     }
     
     /**
@@ -387,6 +468,46 @@ public class EffectManager implements Listener {
     }
     
     /**
+     * 获取权限管理器
+     * @return 权限管理器
+     */
+    public PermissionManager getPermissionManager() {
+        return permissionManager;
+    }
+    
+    /**
+     * 获取冷却管理器
+     * @return 冷却管理器
+     */
+    public CooldownManager getCooldownManager() {
+        return cooldownManager;
+    }
+    
+    /**
+     * 获取区域管理器
+     * @return 区域管理器
+     */
+    public RegionManager getRegionManager() {
+        return regionManager;
+    }
+    
+    /**
+     * 获取生物群系缓存管理器
+     * @return 生物群系缓存管理器
+     */
+    public BiomeCacheManager getBiomeCacheManager() {
+        return biomeCacheManager;
+    }
+    
+    /**
+     * 获取统计管理器
+     * @return 统计管理器
+     */
+    public StatisticsManager getStatisticsManager() {
+        return statisticsManager;
+    }
+    
+    /**
      * 获取指定ID的效果
      * @param effectId 效果ID
      * @return 效果实例，如果不存在则返回null
@@ -400,15 +521,14 @@ public class EffectManager implements Listener {
      */
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
-        // 玩家加入时，立即应用适用的效果
         Player player = event.getPlayer();
         World world = player.getWorld();
         
-        for (BaseWeatherEffect effect : effects.values()) {
-            if (effect.isApplicable(world)) {
-                effect.apply(player, world);
-            }
-        }
+        // 初始化玩家会话
+        enhancedTimeEffectManager.getPlayerSession(player);
+        
+        // 应用初始效果
+        applyEffectsForPlayer(player, world);
     }
     
     /**
@@ -416,38 +536,24 @@ public class EffectManager implements Listener {
      */
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
-        // 玩家退出时，移除所有效果
         Player player = event.getPlayer();
-        World world = player.getWorld();
-        
-        for (BaseWeatherEffect effect : effects.values()) {
-            effect.remove(player, world);
-        }
+        // 清除玩家的冷却时间
+        cooldownManager.clearCooldowns(player);
     }
     
     /**
-     * 当玩家切换世界时
+     * 为玩家应用所有适用的效果
+     * @param player 玩家
+     * @param world 世界
      */
-    @EventHandler
-    public void onPlayerChangedWorld(PlayerChangedWorldEvent event) {
-        Player player = event.getPlayer();
-        World fromWorld = event.getFrom();
-        World toWorld = player.getWorld();
-        
-        // 移除旧世界的效果
+    private void applyEffectsForPlayer(Player player, World world) {
         for (BaseWeatherEffect effect : effects.values()) {
-            if (effect.isApplicable(fromWorld)) {
-                effect.remove(player, fromWorld);
-            }
-        }
-        
-        // 应用新世界的效果
-        for (BaseWeatherEffect effect : effects.values()) {
-            if (effect.isApplicable(toWorld)) {
-                effect.apply(player, toWorld);
+            if (effect.isApplicable(world)) {
+                effect.apply(player, world);
             }
         }
     }
+    
     
     /**
      * 当天气改变时
@@ -508,6 +614,32 @@ public class EffectManager implements Listener {
                         biomeEffect.apply(player, world);
                     }
                 }
+            }
+        }
+    }
+    
+    
+    
+    /**
+     * 当玩家切换世界时
+     */
+    @EventHandler
+    public void onPlayerChangedWorld(PlayerChangedWorldEvent event) {
+        Player player = event.getPlayer();
+        World fromWorld = event.getFrom();
+        World toWorld = player.getWorld();
+        
+        // 移除旧世界的效果
+        for (BaseWeatherEffect effect : effects.values()) {
+            if (effect.isApplicable(fromWorld)) {
+                effect.remove(player, fromWorld);
+            }
+        }
+        
+        // 应用新世界的效果
+        for (BaseWeatherEffect effect : effects.values()) {
+            if (effect.isApplicable(toWorld)) {
+                effect.apply(player, toWorld);
             }
         }
     }
