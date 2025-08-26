@@ -659,21 +659,31 @@ public abstract class BaseWeatherEffect implements WeatherEffect {
      * @param player 玩家
      */
     protected void tryPlaySound(Player player) {
-        if (sound == null || sound.isEmpty() || !(boolean) sound.getOrDefault("enabled", false)) return;
+        if (sound == null || sound.isEmpty() || !(Boolean) sound.getOrDefault("enabled", false)) return;
         
-        double chance = (double) sound.getOrDefault("chance", 1.0);
+        double chance = (Double) sound.getOrDefault("chance", 1.0);
         if (Math.random() > chance) return;
         
         String resource = (String) sound.getOrDefault("resource", "entity.player.levelup");
+        // 添加空值检查
+        if (resource == null || resource.isEmpty()) {
+            resource = "entity.player.levelup";
+        }
+        
         float volume = ((Number) sound.getOrDefault("volume", 1.0f)).floatValue();
         float pitch = ((Number) sound.getOrDefault("pitch", 1.0f)).floatValue();
         
         try {
-            Sound soundEnum = Sound.valueOf(resource.toUpperCase().replace(".", "_"));
-            player.playSound(player.getLocation(), soundEnum, volume, pitch);
+            // 添加对空值的额外检查，避免在valueOf方法中出现异常
+            if (resource != null && !resource.isEmpty()) {
+                Sound soundEnum = Sound.valueOf(resource.toUpperCase().replace(".", "_").replace(":", "_"));
+                player.playSound(player.getLocation(), soundEnum, volume, pitch);
+            }
         } catch (IllegalArgumentException e) {
             // 如果声音名称无效，尝试使用字符串形式
-            player.playSound(player.getLocation(), resource, volume, pitch);
+            if (resource != null && !resource.isEmpty()) {
+                player.playSound(player.getLocation(), resource, volume, pitch);
+            }
         }
     }
     
