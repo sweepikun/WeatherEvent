@@ -23,6 +23,9 @@ public class WeatherEvent extends JavaPlugin {
         // 保存默认配置
         saveDefaultConfig();
         
+        // 显示ASCII艺术字
+        displayAsciiArt();
+        
         // 初始化共享效果管理器
         sharedEffectManager = new SharedEffectManager(this);
         
@@ -45,6 +48,22 @@ public class WeatherEvent extends JavaPlugin {
         getCommand("weather").setExecutor(new WeatherCommand(this));
         
         getLogger().info("WeatherEvent 插件已启用！");
+    }
+    
+    /**
+     * 显示ASCII艺术字
+     */
+    private void displayAsciiArt() {
+        getLogger().info("");
+        getLogger().info("██╗    ██╗███████╗ █████╗ ████████╗██╗  ██╗███████╗██████╗     ███████╗██╗   ██╗███████╗███╗   ██╗████████╗");
+        getLogger().info("██║    ██║██╔════╝██╔══██╗╚══██╔══╝██║  ██║██╔════╝██╔══██╗    ██╔════╝██║   ██║██╔════╝████╗  ██║╚══██╔══╝");
+        getLogger().info("██║ █╗ ██║█████╗  ███████║   ██║   ███████║█████╗  ██████╔╝    █████╗  ██║   ██║█████╗  ██╔██╗ ██║   ██║   ");
+        getLogger().info("██║███╗██║██╔══╝  ██╔══██║   ██║   ██╔══██║██╔══╝  ██╔══██╗    ██╔══╝  ╚██╗ ██╔╝██╔══╝  ██║╚██╗██║   ██║   ");
+        getLogger().info("╚███╔███╔╝███████╗██║  ██║   ██║   ██║  ██║███████╗██║  ██║    ███████╗ ╚████╔╝ ███████╗██║ ╚████║   ██║   ");
+        getLogger().info(" ╚══╝╚══╝ ╚══════╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝    ╚══════╝  ╚═══╝  ╚══════╝╚═╝  ╚═══╝   ╚═╝   ");
+        getLogger().info("");
+        getLogger().info("WeatherEvent 已启动!");
+        getLogger().info("");
     }
     
     /**

@@ -15,7 +15,7 @@ WeatherEvent 插件通过扩展原版天气系统，为服务器管理员提供�
 - 基于特殊节日、月相和玩家在线时长的动态效果
 - 支持基于权限组、世界和区域的差异化配置
 - 效果冷却系统，防止过于频繁触发
-- 支持Minecraft 1.21新增的Pale Garden（苍白花园）生物群系
+- 基于方块类型的条件触发效果
 
 ## 安装方法
 
@@ -44,6 +44,7 @@ WeatherEvent 插件通过扩展原版天气系统，为服务器管理员提供�
 - **权限组支持**：为不同玩家组提供不同的效果配置
 - **冷却系统**：防止效果过于频繁触发
 - **世界和区域配置**：支持基于世界或区域的效果配置
+- **基于方块类型的条件触发**：根据玩家站立的方块类型触发特定效果
 
 ## 配置指南
 
@@ -82,52 +83,79 @@ min-light: 0
 max-light: 10
 ```
 
+4. **天气类型限制**：
+```yaml
+weather-types:
+  - rain
+  - thunder
+```
+
+5. **方块类型限制**：
+```yaml
+block-types:
+  - water
+  - lava
+```
+
 ### 效果类型
+
+每种天气效果可以包含以下类型的效果：
 
 1. **药水效果**：
 ```yaml
 potion-effects:
   - type: SPEED
-    level: 0  # 或 [0, 1] 表示随机范围
-    duration: 200  # 或 [100, 200] 表示随机范围
+    level: 1
+    duration: 200
 ```
 
 2. **随机效果**：
 ```yaml
 random-effects:
-  chance: 0.15  # 触发几率
-  # 前置条件（可选）
-  prerequisites:
-    type: has_potion_effect
-    effect_type: SLOW
-    level: 0
+  chance: 0.2
   effects:
     - type: REGENERATION
       level: 0
       duration: 100
 ```
 
-3. **标题显示**：
+3. **命令执行**：
+```yaml
+commands:
+  chance: 0.1
+  list:
+    - "title %player% title {\"text\":\"Hello\",\"color\":\"gold\"}"
+```
+
+4. **消息显示**：
+```yaml
+message:
+  enabled: true
+  text: "§a这是一个消息"
+  chance: 0.5
+```
+
+5. **标题显示**：
 ```yaml
 title:
   enabled: true
-  text: "§e阳光明媚"
-  subtitle: "§7享受温暖的阳光吧，%player_name%！"
+  text: "§e标题"
+  subtitle: "§7副标题"
   fadeIn: 10
   stay: 70
   fadeOut: 20
-  chance: 0.3  # 显示几率
+  chance: 0.5
 ```
 
-4. **动作栏消息**：
+6. **动作栏消息**：
 ```yaml
 action-bar:
   enabled: true
-  text: "§b雨水淋湿了你"
-  chance: 0.4
+  text: "§b动作栏消息"
+  chance: 0.5
 ```
 
-5. **声音效果**：
+7. **声音效果**：
 ```yaml
 sound:
   enabled: true
@@ -137,86 +165,27 @@ sound:
   chance: 0.5
 ```
 
-6. **聊天消息**：
+8. **伤害效果**：
 ```yaml
-message:
+damage:
   enabled: true
-  text: "§8一道闪电划过天空！"
-  chance: 0.3
-```
-
-7. **命令执行**：
-```yaml
-commands:
-  chance: 0.05
-  list:
-    - "title %player% title {\"text\":\"雷电交加\",\"color\":\"dark_purple\"}"
+  chance: 0.1
+  amount: 2.0
 ```
 
 ### 连锁效果
 
-增强的连锁效果系统支持延迟触发和复杂条件：
+支持连锁效果，即一个效果触发后可能引发其他效果：
 
-1. **基本连锁效果**：
-```yaml
-commands:
-  chance: 0.1
-  list:
-    - "title %player% actionbar {\"text\":\"触发连锁效果\",\"color\":\"green\"}"
-  chain-effects:
-    # 简单连锁效果
-    bonus_effect:
-      chance: 0.2
-      effect-id: "healing_effect"
-```
-
-2. **带延迟的连锁效果**：
 ```yaml
 chain-effects:
-  delayed_effect:
-    chance: 0.3
-    effect-id: "strong_healing_effect"
-    delay: 40  # 延迟2秒触发（20 ticks = 1秒）
-```
-
-3. **带条件的连锁效果**：
-```yaml
-chain-effects:
-  conditional_effect:
-    chance: 0.25
-    effect-id: "night_vision_effect"
-    conditions:
-      type: "light_level"
-      min: 0
-      max: 5
-```
-
-4. **复杂条件示例**：
-```yaml
-chain-effects:
-  # 只在玩家有速度效果时触发
-  speed_chain:
-    chance: 0.15
-    effect-id: "speed_bonus"
+  bonus_effect:
+    chance: 0.2
+    effect-id: "healing_effect"
+    delay: 20
     conditions:
       type: "has_potion_effect"
       effect_type: "SPEED"
-  
-  # 只在雨天触发
-  rain_chain:
-    chance: 0.2
-    effect-id: "slip_effect"
-    conditions:
-      type: "weather"
-      weather: "rain"
-  
-  # 随机触发
-  random_chain:
-    chance: 0.1
-    effect-id: "lucky_effect"
-    conditions:
-      type: "random"
-      chance: 0.5
 ```
 
 ### 生物群系天气效果
@@ -458,25 +427,39 @@ effects:
     # ... 其他配置
 ```
 
-### 占位符
+### 基于方块类型的效果
 
-在消息、标题和命令中可以使用以下占位符：
+支持根据玩家站立的方块类型触发特定效果：
 
-- `%player%` 或 `%player_name%`：玩家名称
-- `%player_x%`：玩家 X 坐标
-- `%player_y%`：玩家 Y 坐标
-- `%player_z%`：玩家 Z 坐标
-- `%player_health%`：玩家生命值
-- `%player_food%`：玩家饥饿值
-- `%player_world%`：玩家所在世界名称
+```yaml
+effects:
+  # 基于方块类型的效果示例 - 水中效果
+  water_effect:
+    enabled: true
+    # 只在水中生效
+    block-types:
+      - water
+    potion-effects:
+      - type: WATER_BREATHING
+        level: 0
+        duration: 200
+    message:
+      enabled: true
+      text: "§b你在水中获得了水下呼吸能力"
+      chance: 0.8
 
-## 命令
-
-- `/weather reload`：重新加载配置文件
-- `/weather enable <effect>`：启用指定效果
-- `/weather disable <effect>`：禁用指定效果
-- `/weather list`：列出所有可用效果
-
-## 示例配置
-
-查看 `config.yml` 文件获取完整的示例配置。
+  # 基于方块类型的效果示例 - 熔岩附近效果
+  lava_effect:
+    enabled: true
+    # 在熔岩附近生效
+    block-types:
+      - lava
+    potion-effects:
+      - type: FIRE_RESISTANCE
+        level: 0
+        duration: 200
+    message:
+      enabled: true
+      text: "§c你在熔岩附近获得了抗火能力"
+      chance: 0.8
+```

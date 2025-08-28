@@ -92,6 +92,11 @@ public abstract class BaseWeatherEffect implements WeatherEffect {
         if (config.isList("weather-types")) {
             condition.setWeatherTypes(config.getStringList("weather-types"));
         }
+        
+        // 加载方块类型限制
+        if (config.isList("block-types")) {
+            condition.setBlockTypes(config.getStringList("block-types"));
+        }
     }
     
     /**
@@ -347,6 +352,14 @@ public abstract class BaseWeatherEffect implements WeatherEffect {
         int light = player.getLocation().getBlock().getLightLevel();
         if (condition.getMinLight() != null && light < condition.getMinLight()) return false;
         if (condition.getMaxLight() != null && light > condition.getMaxLight()) return false;
+        
+        // 检查方块类型条件
+        if (condition.getBlockTypes() != null && !condition.getBlockTypes().isEmpty()) {
+            String blockType = player.getLocation().getBlock().getType().name().toLowerCase();
+            boolean blockMatch = condition.getBlockTypes().stream()
+                    .anyMatch(b -> b.equalsIgnoreCase(blockType));
+            if (!blockMatch) return false;
+        }
         
         return true;
     }

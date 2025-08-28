@@ -29,6 +29,7 @@ bin/
 /dist/
 /nbdist/
 /.nb-gradle/
+/news.md
 
 # VS Code
 .vscode/

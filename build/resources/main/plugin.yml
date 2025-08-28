@@ -1,5 +1,5 @@
 name: WeatherEvent
-version: 1.2.6
+version: 1.2.8
 main: cn.popcraft.weatherevent.WeatherEvent
 api-version: 1.13
 description: 动态天气效果系统，让天气影响游戏玩法
