@@ -1,0 +1,80 @@
+# .github/workflows/release.yml
+name: Build and Release Plugin
+
+on:
+  push:
+    tags:
+      - 'v*'  # 自动：推送 v* 标签时触发
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Release tag name (e.g. v1.2.3)'
+        required: true
+        default: 'v0.0.0-manual'
+      publish_release:
+        description: 'Publish to GitHub Release? (Set to "true" to publish)'
+        required: true
+        default: 'false'
+        type: boolean
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x ./gradlew
+
+      - name: Build with Gradle Wrapper
+        run: ./gradlew build
+
+      - name: Find built JAR file
+        id: find-jar
+        run: |
+          JAR_FILE=$(find build/libs -type f -name "*.jar" ! -name "*-sources.jar" ! -name "*-javadoc.jar" | head -n 1)
+          if [ -z "$JAR_FILE" ]; then
+            echo "No JAR file found!"
+            exit 1
+          fi
+          echo "jar_path=$JAR_FILE" >> $GITHUB_OUTPUT
+          echo "Found JAR: $JAR_FILE"
+
+      - name: Determine tag name
+        id: get_tag
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            TAG="${{ github.event.inputs.tag_name }}"
+          else
+            TAG="${GITHUB_REF#refs/tags/}"
+          fi
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
+      - name: Check if should publish
+        id: check_publish
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            PUBLISH="${{ github.event.inputs.publish_release }}"
+          else
+            PUBLISH="true"
+          fi
+          echo "publish=$PUBLISH" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        if: steps.check_publish.outputs.publish == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Release ${{ steps.get_tag.outputs.tag }}
+          tag_name: ${{ steps.get_tag.outputs.tag }}
+          draft: false
+          prerelease: false
+          files: ${{ steps.find-jar.outputs.jar_path }}
+          token: ${{ secrets.GITHUB_TOKEN }}
