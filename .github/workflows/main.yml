@@ -31,11 +31,11 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Grant execute permission for gradlew
-        run: chmod +x ./gradlew
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3  # 这会安装系统 gradle
 
-      - name: Build with Gradle Wrapper
-        run: ./gradlew build
+      - name: Build with system Gradle
+        run: gradle build --no-daemon
 
       - name: Find built JAR file
         id: find-jar
