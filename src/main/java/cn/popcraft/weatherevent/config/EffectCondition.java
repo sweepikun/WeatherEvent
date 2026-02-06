@@ -13,6 +13,7 @@ public class EffectCondition {
     private Integer minLight;
     private Integer maxLight;
     private List<String> weatherTypes; // 天气类型列表：clear, rain, thunder
+    private List<String> blockTypes; // 方块类型列表
     
     public EffectCondition() {
         // 默认构造函数
@@ -64,5 +65,13 @@ public class EffectCondition {
     
     public void setWeatherTypes(List<String> weatherTypes) {
         this.weatherTypes = weatherTypes;
+    }
+    
+    public List<String> getBlockTypes() {
+        return blockTypes;
+    }
+    
+    public void setBlockTypes(List<String> blockTypes) {
+        this.blockTypes = blockTypes;
     }
 }

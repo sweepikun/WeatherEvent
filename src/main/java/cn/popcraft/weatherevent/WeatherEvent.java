@@ -23,6 +23,9 @@ public class WeatherEvent extends JavaPlugin {
         // 保存默认配置
         saveDefaultConfig();
         
+        // 显示ASCII艺术字
+        displayAsciiArt();
+        
         // 初始化共享效果管理器
         sharedEffectManager = new SharedEffectManager(this);
         
@@ -48,6 +51,22 @@ public class WeatherEvent extends JavaPlugin {
     }
     
     /**
+     * 显示ASCII艺术字
+     */
+    private void displayAsciiArt() {
+        getLogger().info("");
+        getLogger().info("§b██╗    ██╗§3███████╗ §9 █████╗ §1████████╗§5██╗  ██╗§d███████╗§6██████╗     §e███████╗§a██╗   ██╗§2███████╗§c███╗   ██╗§4████████╗");
+        getLogger().info("§b██║    ██║§3██╔════╝§9██╔══██╗§1╚══██╔══╝§5██║  ██║§d██╔════╝§6██╔══██╗    §e██╔════╝§a██║   ██║§2██╔════╝§c████╗  ██║§4╚══██╔══╝");
+        getLogger().info("§b██║ █╗ ██║§3█████╗  §9███████║   §1██║   §5███████║§d█████╗  §6██████╔╝    §e█████╗  §a██║   ██║§2█████╗  §c██╔██╗ ██║   §4██║   ");
+        getLogger().info("§b██║███╗██║§3██╔══╝  §9██╔══██║   §1██║   §5██╔══██║§d██╔══╝  §6██╔══██╗    §e██╔══╝  §a╚██╗ ██╔╝§2██╔══╝  §c██║╚██╗██║   §4██║   ");
+        getLogger().info("§b╚███╔███╔╝§3███████╗§9██║  ██║   §1██║   §5██║  ██║§d███████╗§6██║  ██║    §e███████╗ §a╚████╔╝ §2███████╗§c██║ ╚████║   §4██║   ");
+        getLogger().info("§b ╚══╝╚══╝ §3╚══════╝§9╚═╝  ╚═╝   §1╚═╝   §5╚═╝  ╚═╝§d╚══════╝§6╚═╝  ╚═╝    §e╚══════╝  §a╚═══╝  §2╚══════╝§c╚═╝  ╚═══╝   §4╚═╝   ");
+        getLogger().info("");
+        getLogger().info("§aWeatherEvent §6已启动!");
+        getLogger().info("");
+    }
+    
+    /**
      * 重新加载效果
      * 用于重新加载配置后更新效果
      */
@@ -64,7 +83,7 @@ public class WeatherEvent extends JavaPlugin {
         // 重新加载效果
         effectManager.loadEffects();
         
-        getLogger().info("已重新加载天气效果！");
+        getLogger().info("§a已重新加载天气效果！");
     }
     
     @Override
@@ -74,7 +93,7 @@ public class WeatherEvent extends JavaPlugin {
             effectManager.unregisterAllEffects();
         }
         
-        getLogger().info("WeatherEvent 插件已禁用！");
+        getLogger().info("§cWeatherEvent 插件已禁用！");
     }
     
     /**

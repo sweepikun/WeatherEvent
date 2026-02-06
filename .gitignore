@@ -29,6 +29,7 @@ bin/
 /dist/
 /nbdist/
 /.nb-gradle/
+/news.md
 
 # VS Code
 .vscode/
@@ -55,6 +56,8 @@ Desktop.ini
 *.zip
 *.tar.gz
 *.rar
+*.html
 
 # virtual machine crash logs
 hs_err_pid*
+/build/
