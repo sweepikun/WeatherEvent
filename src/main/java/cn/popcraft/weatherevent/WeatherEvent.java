@@ -1,11 +1,16 @@
 package cn.popcraft.weatherevent;
 
+import cn.popcraft.weatherevent.api.WeatherEventAPI;
+import cn.popcraft.weatherevent.api.WeatherEventAPIImpl;
 import cn.popcraft.weatherevent.commands.WeatherCommand;
 import cn.popcraft.weatherevent.config.SharedEffectManager;
+import cn.popcraft.weatherevent.disaster.DisasterManager;
+import cn.popcraft.weatherevent.effects.BiomeWeatherManager;
 import cn.popcraft.weatherevent.effects.EffectManager;
+import cn.popcraft.weatherevent.forecast.WeatherForecastManager;
 import cn.popcraft.weatherevent.listeners.PlayerListener;
 import cn.popcraft.weatherevent.listeners.WeatherListener;
-import cn.popcraft.weatherevent.effects.BiomeWeatherManager;
+import cn.popcraft.weatherevent.season.SeasonManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
 /**
@@ -17,6 +22,10 @@ public class WeatherEvent extends JavaPlugin {
     private EffectManager effectManager;
     private SharedEffectManager sharedEffectManager;
     private BiomeWeatherManager biomeWeatherManager;
+    private SeasonManager seasonManager;
+    private DisasterManager disasterManager;
+    private WeatherForecastManager weatherForecastManager;
+    private WeatherEventAPIImpl api;
     
     @Override
     public void onEnable() {
@@ -39,15 +48,32 @@ public class WeatherEvent extends JavaPlugin {
         // 加载效果
         effectManager.loadEffects();
         
+        // 初始化季节管理器
+        seasonManager = new SeasonManager(this);
+        seasonManager.loadFromConfig(getConfig().getConfigurationSection("seasons"));
+        
+        // 初始化灾害管理器
+        disasterManager = new DisasterManager(this);
+        disasterManager.loadFromConfig(getConfig().getConfigurationSection("disasters"));
+        
+        // 初始化天气预报管理器
+        weatherForecastManager = new WeatherForecastManager(this);
+        weatherForecastManager.loadFromConfig(getConfig().getConfigurationSection("weather-forecast"));
+        
+        // 初始化API
+        api = new WeatherEventAPIImpl(this);
+        
         // 注册事件监听器
         getServer().getPluginManager().registerEvents(effectManager, this);
         getServer().getPluginManager().registerEvents(new WeatherListener(this), this);
         getServer().getPluginManager().registerEvents(new PlayerListener(this), this);
+        getServer().getPluginManager().registerEvents(seasonManager, this);
+        getServer().getPluginManager().registerEvents(disasterManager, this);
         
         // 注册命令
         getCommand("weather").setExecutor(new WeatherCommand(this));
         
-        getLogger().info("WeatherEvent 插件已启用！");
+        getLogger().info("WeatherEvent v1.3.0 插件已启用！");
     }
     
     /**
@@ -83,7 +109,16 @@ public class WeatherEvent extends JavaPlugin {
         // 重新加载效果
         effectManager.loadEffects();
         
-        getLogger().info("§a已重新加载天气效果！");
+        // 重新加载季节系统
+        seasonManager.reload();
+        
+        // 重新加载灾害系统
+        disasterManager.reload();
+        
+        // 重新加载天气预报系统
+        weatherForecastManager.reload();
+        
+        getLogger().info("§a已重新加载天气效果和新系统！");
     }
     
     @Override
@@ -91,6 +126,11 @@ public class WeatherEvent extends JavaPlugin {
         // 取消注册所有效果
         if (effectManager != null) {
             effectManager.unregisterAllEffects();
+        }
+        
+        // 停止天气预报更新任务
+        if (weatherForecastManager != null) {
+            weatherForecastManager.stop();
         }
         
         getLogger().info("§cWeatherEvent 插件已禁用！");
@@ -118,5 +158,37 @@ public class WeatherEvent extends JavaPlugin {
      */
     public BiomeWeatherManager getBiomeWeatherManager() {
         return biomeWeatherManager;
+    }
+    
+    /**
+     * 获取季节管理器
+     * @return 季节管理器实例
+     */
+    public SeasonManager getSeasonManager() {
+        return seasonManager;
+    }
+    
+    /**
+     * 获取灾害管理器
+     * @return 灾害管理器实例
+     */
+    public DisasterManager getDisasterManager() {
+        return disasterManager;
+    }
+    
+    /**
+     * 获取天气预报管理器
+     * @return 天气预报管理器实例
+     */
+    public WeatherForecastManager getWeatherForecastManager() {
+        return weatherForecastManager;
+    }
+    
+    /**
+     * 获取API实例
+     * @return API实例
+     */
+    public WeatherEventAPI getAPI() {
+        return api;
     }
 }

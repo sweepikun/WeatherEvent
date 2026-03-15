@@ -711,3 +711,195 @@ messages:
   rain-stop: "&e雨停了，天气转晴！"
   thunder-start: "&5雷暴开始了，小心闪电！"
   thunder-stop: "&e雷暴结束了！"
+  command-clear: "&e天气已设置为晴朗！"
+  command-rain: "&9天气已设置为下雨！"
+  command-thunder: "&5天气已设置为雷暴！"
+
+# ==================== 季节系统配置 ====================
+seasons:
+  # 是否启用季节系统
+  enabled: true
+  # 季节模式: real_time(真实时间) 或 game_time(游戏内时间)
+  mode: real_time
+  # 游戏内时间模式下每个季节的天数
+  season-duration-days: 30
+  # 是否使用真实时间
+  use-real-time: true
+  # 真实时间月份偏移 (用于调整季节起始月份)
+  real-time-month-offset: 0
+  # 是否广播季节变化
+  broadcast-season-change: true
+  # 季节效果配置
+  effects:
+    # 春天效果
+    spring:
+      enabled: true
+      potion-effects:
+        - type: REGENERATION
+          level: 0
+          duration: 200
+      message: "§a春天来了，万物复苏！"
+      message-chance: 0.3
+      weather-bias: rain
+      weather-bias-strength: 0.2
+    # 夏天效果
+    summer:
+      enabled: true
+      potion-effects:
+        - type: SPEED
+          level: 0
+          duration: 200
+      message: "§e夏日炎炎，注意防暑！"
+      message-chance: 0.3
+      weather-bias: clear
+      weather-bias-strength: 0.3
+    # 秋天效果
+    autumn:
+      enabled: true
+      potion-effects:
+        - type: HASTE
+          level: 0
+          duration: 200
+      message: "§6秋高气爽，收获的季节！"
+      message-chance: 0.3
+      weather-bias: clear
+      weather-bias-strength: 0.1
+    # 冬天效果
+    winter:
+      enabled: true
+      potion-effects:
+        - type: SLOW
+          level: 0
+          duration: 200
+      message: "§b寒冬腊月，注意保暖！"
+      message-chance: 0.3
+      weather-bias: rain
+      weather-bias-strength: 0.2
+
+# ==================== 灾害系统配置 ====================
+disasters:
+  # 是否启用灾害系统
+  enabled: true
+  # 全局触发几率乘数 (0-1)
+  global-chance: 0.05
+  # 最少在线玩家数才触发灾害
+  min-players-online: 1
+  # 是否广播灾害
+  announce-disasters: true
+  # 灾害配置
+  disasters:
+    # 龙卷风
+    tornado:
+      enabled: true
+      chance: 0.1
+      duration-seconds: 60
+      cooldown-seconds: 600
+      damage-per-second: 2.0
+      radius: 30.0
+      allowed-weathers:
+        - rain
+        - thunder
+      night-only: false
+      start-commands:
+        - "title @a[distance=..50] actionbar {\"text\":\"龙卷风来袭！\",\"color\":\"red\"}"
+        - "playsound minecraft:entity.lightning_bolt.thunder ambient @a[distance=..50] ~ ~ ~ 1.0 0.5"
+      tick-commands:
+        - "particle minecraft:cloud %x% %y% %z% 2 10 2 0.1 50 force"
+      end-commands:
+        - "title @a[distance=..50] actionbar {\"text\":\"龙卷风已消散\",\"color\":\"green\"}"
+      warning-message: "§c龙卷风正在靠近！"
+    # 洪水
+    flood:
+      enabled: true
+      chance: 0.08
+      duration-seconds: 120
+      cooldown-seconds: 900
+      damage-per-second: 0.5
+      radius: 50.0
+      allowed-weathers:
+        - rain
+      night-only: false
+      start-commands:
+        - "title @a[distance=..50] actionbar {\"text\":\"洪水泛滥！\",\"color\":\"blue\"}"
+      tick-commands:
+        - "particle minecraft:splash %x% %y% %z% 5 0 5 0.1 100 force"
+      end-commands:
+        - "title @a[distance=..50] actionbar {\"text\":\"洪水退去\",\"color\":\"green\"}"
+      warning-message: "§9洪水正在蔓延！"
+    # 冰雹
+    hailstorm:
+      enabled: true
+      chance: 0.15
+      duration-seconds: 45
+      cooldown-seconds: 300
+      damage-per-second: 1.5
+      radius: 40.0
+      allowed-weathers:
+        - rain
+        - thunder
+      night-only: false
+      start-commands:
+        - "title @a[distance=..50] actionbar {\"text\":\"冰雹来袭！\",\"color\":\"white\"}"
+      tick-commands:
+        - "particle minecraft:block ice %x% %y% %z% 8 5 8 0.5 100 force"
+      end-commands:
+        - "title @a[distance=..50] actionbar {\"text\":\"冰雹停止\",\"color\":\"green\"}"
+      warning-message: "§f小心冰雹！"
+    # 沙尘暴
+    sandstorm:
+      enabled: true
+      chance: 0.12
+      duration-seconds: 90
+      cooldown-seconds: 600
+      damage-per-second: 1.0
+      radius: 60.0
+      allowed-weathers:
+        - clear
+      allowed-biomes:
+        - desert
+        - badlands
+      night-only: false
+      start-commands:
+        - "title @a[distance=..50] actionbar {\"text\":\"沙尘暴来袭！\",\"color\":\"gold\"}"
+      tick-commands:
+        - "particle minecraft:dust 0.8 0.7 0.4 1 %x% %y% %z% 15 5 15 0.1 200 force"
+        - "effect give @a[distance=..60] minecraft:blindness 2 0 true"
+      end-commands:
+        - "title @a[distance=..50] actionbar {\"text\":\"沙尘暴已停止\",\"color\":\"green\"}"
+      warning-message: "§6沙尘暴正在靠近！"
+    # 暴风雪
+    blizzard:
+      enabled: true
+      chance: 0.1
+      duration-seconds: 100
+      cooldown-seconds: 600
+      damage-per-second: 1.0
+      radius: 45.0
+      allowed-weathers:
+        - rain
+      allowed-biomes:
+        - snowy_plains
+        - snowy_taiga
+        - ice_spikes
+        - frozen_river
+        - frozen_ocean
+      night-only: false
+      start-commands:
+        - "title @a[distance=..50] actionbar {\"text\":\"暴风雪来袭！\",\"color\":\"aqua\"}"
+      tick-commands:
+        - "particle minecraft:snowflake %x% %y% %z% 12 0 12 0.05 150 force"
+        - "effect give @a[distance=..45] minecraft:slowness 3 1 true"
+      end-commands:
+        - "title @a[distance=..50] actionbar {\"text\":\"暴风雪已停止\",\"color\":\"green\"}"
+      warning-message: "§b暴风雪正在靠近！"
+
+# ==================== 天气预报系统配置 ====================
+weather-forecast:
+  # 是否启用天气预报系统
+  enabled: true
+  # 预报天数
+  forecast-days: 3
+  # 更新间隔 (ticks, 20ticks = 1秒)
+  update-interval-ticks: 1200
+  # 基础准确度 (0-1)
+  base-accuracy: 0.8

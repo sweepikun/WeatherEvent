@@ -1,8 +1,11 @@
 package cn.popcraft.weatherevent.commands;
 
 import cn.popcraft.weatherevent.WeatherEvent;
+import cn.popcraft.weatherevent.disaster.DisasterType;
 import cn.popcraft.weatherevent.effects.BaseWeatherEffect;
+import cn.popcraft.weatherevent.forecast.WeatherForecast;
 import cn.popcraft.weatherevent.manager.StatisticsManager;
+import cn.popcraft.weatherevent.season.Season;
 import org.bukkit.ChatColor;
 import org.bukkit.World;
 import org.bukkit.command.Command;
@@ -24,7 +27,8 @@ public class WeatherCommand implements CommandExecutor, TabCompleter {
     
     private final WeatherEvent plugin;
     private final List<String> subCommands = Arrays.asList(
-        "clear", "rain", "thunder", "info", "effects", "reload", "debug", "stats"
+        "clear", "rain", "thunder", "info", "effects", "reload", "debug", "stats", 
+        "season", "disaster", "forecast"
     );
     
     public WeatherCommand(WeatherEvent plugin) {
@@ -57,6 +61,12 @@ public class WeatherCommand implements CommandExecutor, TabCompleter {
                 return handleDebugCommand(sender);
             case "stats":
                 return handleStatsCommand(sender);
+            case "season":
+                return handleSeasonCommand(sender, args);
+            case "disaster":
+                return handleDisasterCommand(sender, args);
+            case "forecast":
+                return handleForecastCommand(sender);
             default:
                 sendUsage(sender);
                 return true;
@@ -297,6 +307,183 @@ public class WeatherCommand implements CommandExecutor, TabCompleter {
         return true;
     }
 
+    private boolean handleSeasonCommand(CommandSender sender, String[] args) {
+        if (!sender.hasPermission("weatherevent.command.season")) {
+            sender.sendMessage(ChatColor.RED + "你没有权限使用此命令！");
+            return true;
+        }
+        
+        if (plugin.getSeasonManager() == null || !plugin.getSeasonManager().isEnabled()) {
+            sender.sendMessage(ChatColor.RED + "季节系统未启用！");
+            return true;
+        }
+        
+        World world = getTargetWorld(sender);
+        if (world == null) {
+            return true;
+        }
+        
+        if (args.length < 2) {
+            // 显示当前季节
+            Season currentSeason = plugin.getSeasonManager().getWorldSeason(world);
+            sender.sendMessage(ChatColor.GOLD + "=== 季节信息 ===");
+            sender.sendMessage(ChatColor.YELLOW + "世界: " + world.getName());
+            sender.sendMessage(ChatColor.YELLOW + "当前季节: " + currentSeason.getColor() + 
+                             currentSeason.getDisplayName());
+            sender.sendMessage(ChatColor.YELLOW + "模式: " + 
+                             plugin.getSeasonManager().getMode().getDisplayName());
+            sender.sendMessage(ChatColor.GRAY + "用法: /weather season <spring|summer|autumn|winter>");
+            return true;
+        }
+        
+        // 设置季节
+        String seasonName = args[1].toLowerCase();
+        Season newSeason;
+        
+        switch (seasonName) {
+            case "spring":
+            case "春天":
+                newSeason = Season.SPRING;
+                break;
+            case "summer":
+            case "夏天":
+                newSeason = Season.SUMMER;
+                break;
+            case "autumn":
+            case "fall":
+            case "秋天":
+                newSeason = Season.AUTUMN;
+                break;
+            case "winter":
+            case "冬天":
+                newSeason = Season.WINTER;
+                break;
+            default:
+                sender.sendMessage(ChatColor.RED + "无效的季节！可用: spring, summer, autumn, winter");
+                return true;
+        }
+        
+        plugin.getSeasonManager().setWorldSeason(world, newSeason);
+        sender.sendMessage(ChatColor.GREEN + "已将 " + world.getName() + " 的季节设置为 " + 
+                         newSeason.getColor() + newSeason.getDisplayName());
+        
+        return true;
+    }
+    
+    private boolean handleDisasterCommand(CommandSender sender, String[] args) {
+        if (!sender.hasPermission("weatherevent.command.disaster")) {
+            sender.sendMessage(ChatColor.RED + "你没有权限使用此命令！");
+            return true;
+        }
+        
+        if (plugin.getDisasterManager() == null || !plugin.getDisasterManager().isEnabled()) {
+            sender.sendMessage(ChatColor.RED + "灾害系统未启用！");
+            return true;
+        }
+        
+        World world = getTargetWorld(sender);
+        if (world == null) {
+            return true;
+        }
+        
+        if (args.length < 2) {
+            // 显示帮助
+            sender.sendMessage(ChatColor.GOLD + "=== 灾害命令 ===");
+            sender.sendMessage(ChatColor.YELLOW + "用法:");
+            sender.sendMessage(ChatColor.GRAY + "  /weather disaster list - 列出所有灾害类型");
+            sender.sendMessage(ChatColor.GRAY + "  /weather disaster trigger <类型> - 触发灾害");
+            sender.sendMessage(ChatColor.GRAY + "  /weather disaster stop - 停止当前灾害");
+            sender.sendMessage(ChatColor.GRAY + "  /weather disaster status - 查看灾害状态");
+            return true;
+        }
+        
+        String action = args[1].toLowerCase();
+        
+        switch (action) {
+            case "list":
+                sender.sendMessage(ChatColor.GOLD + "=== 可用灾害类型 ===");
+                for (DisasterType type : DisasterType.values()) {
+                    sender.sendMessage(ChatColor.GREEN + "- " + type.getId() + 
+                                     " (" + type.getColor() + type.getDisplayName() + 
+                                     ChatColor.GREEN + ") 严重度: " + 
+                                     String.format("%.0f%%", type.getSeverity() * 100));
+                }
+                break;
+                
+            case "trigger":
+                if (args.length < 3) {
+                    sender.sendMessage(ChatColor.RED + "请指定灾害类型！用法: /weather disaster trigger <类型>");
+                    return true;
+                }
+                
+                String disasterId = args[2].toLowerCase();
+                DisasterType disasterType = DisasterType.fromId(disasterId);
+                
+                if (disasterType == null) {
+                    sender.sendMessage(ChatColor.RED + "无效的灾害类型！使用 /weather disaster list 查看可用类型");
+                    return true;
+                }
+                
+                if (plugin.getDisasterManager().forceDisaster(world, disasterType)) {
+                    sender.sendMessage(ChatColor.GREEN + "已在 " + world.getName() + " 触发 " + 
+                                     disasterType.getColor() + disasterType.getDisplayName());
+                } else {
+                    sender.sendMessage(ChatColor.RED + "触发灾害失败！");
+                }
+                break;
+                
+            case "stop":
+                if (plugin.getDisasterManager().stopDisaster(world)) {
+                    sender.sendMessage(ChatColor.GREEN + "已停止 " + world.getName() + " 的灾害");
+                } else {
+                    sender.sendMessage(ChatColor.YELLOW + world.getName() + " 当前没有活跃的灾害");
+                }
+                break;
+                
+            case "status":
+                if (plugin.getDisasterManager().hasActiveDisaster(world)) {
+                    sender.sendMessage(ChatColor.GOLD + world.getName() + " 当前有活跃的灾害");
+                } else {
+                    sender.sendMessage(ChatColor.GREEN + world.getName() + " 当前没有活跃的灾害");
+                }
+                break;
+                
+            default:
+                sender.sendMessage(ChatColor.RED + "无效的操作！可用: list, trigger, stop, status");
+                break;
+        }
+        
+        return true;
+    }
+    
+    private boolean handleForecastCommand(CommandSender sender) {
+        if (!sender.hasPermission("weatherevent.command.forecast")) {
+            sender.sendMessage(ChatColor.RED + "你没有权限使用此命令！");
+            return true;
+        }
+        
+        if (plugin.getWeatherForecastManager() == null || !plugin.getWeatherForecastManager().isEnabled()) {
+            sender.sendMessage(ChatColor.RED + "天气预报系统未启用！");
+            return true;
+        }
+        
+        World world = getTargetWorld(sender);
+        if (world == null) {
+            return true;
+        }
+        
+        WeatherForecast forecast = plugin.getWeatherForecastManager().getForecast(world);
+        
+        if (forecast == null || forecast.getEntryCount() == 0) {
+            sender.sendMessage(ChatColor.YELLOW + "暂无天气预报数据，请稍后再试");
+            return true;
+        }
+        
+        sender.sendMessage(forecast.format());
+        
+        return true;
+    }
+
     private World getTargetWorld(CommandSender sender) {
         World world;
         
@@ -334,6 +521,9 @@ public class WeatherCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage(ChatColor.GOLD + "/weather reload " + ChatColor.WHITE + "- 重新加载配置");
         sender.sendMessage(ChatColor.GOLD + "/weather debug " + ChatColor.WHITE + "- 显示调试信息");
         sender.sendMessage(ChatColor.GOLD + "/weather stats " + ChatColor.WHITE + "- 显示统计信息");
+        sender.sendMessage(ChatColor.GOLD + "/weather season " + ChatColor.WHITE + "- 查看/设置季节");
+        sender.sendMessage(ChatColor.GOLD + "/weather disaster " + ChatColor.WHITE + "- 灾害控制");
+        sender.sendMessage(ChatColor.GOLD + "/weather forecast " + ChatColor.WHITE + "- 查看天气预报");
     }
     
     @Override
@@ -361,12 +551,39 @@ public class WeatherCommand implements CommandExecutor, TabCompleter {
                             return sender.hasPermission("weatherevent.command.debug");
                         case "stats":
                             return sender.hasPermission("weatherevent.command.stats");
+                        case "season":
+                            return sender.hasPermission("weatherevent.command.season");
+                        case "disaster":
+                            return sender.hasPermission("weatherevent.command.disaster");
+                        case "forecast":
+                            return sender.hasPermission("weatherevent.command.forecast");
                         default:
                             return true;
                     }
                 })
                 .toList();
         }
+        
+        // 季节命令的补全
+        if (args.length == 2 && args[0].equalsIgnoreCase("season")) {
+            return Arrays.asList("spring", "summer", "autumn", "winter");
+        }
+        
+        // 灾害命令的补全
+        if (args.length == 2 && args[0].equalsIgnoreCase("disaster")) {
+            return Arrays.asList("list", "trigger", "stop", "status");
+        }
+        
+        // 灾害类型补全
+        if (args.length == 3 && args[0].equalsIgnoreCase("disaster") && 
+            args[1].equalsIgnoreCase("trigger")) {
+            List<String> types = new ArrayList<>();
+            for (DisasterType type : DisasterType.values()) {
+                types.add(type.getId());
+            }
+            return types;
+        }
+        
         return new ArrayList<>();
     }
 }
