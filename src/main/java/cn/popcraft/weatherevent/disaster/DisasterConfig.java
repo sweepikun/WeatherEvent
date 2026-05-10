@@ -63,16 +63,31 @@ public class DisasterConfig {
         
         disasterConfig.enabled = config.getBoolean("enabled", true);
         disasterConfig.chance = config.getDouble("chance", 0.1);
-        disasterConfig.durationSeconds = config.getInt("duration-seconds", 60);
-        disasterConfig.cooldownSeconds = config.getInt("cooldown-seconds", 300);
-        disasterConfig.damagePerSecond = config.getDouble("damage-per-second", 1.0);
-        disasterConfig.radius = config.getDouble("radius", 50.0);
-        disasterConfig.allowedWeathers = config.getStringList("allowed-weathers");
-        disasterConfig.allowedBiomes = config.getStringList("allowed-biomes");
+        disasterConfig.durationSeconds = Math.max(1, config.getInt("duration-seconds", 60));
+        disasterConfig.cooldownSeconds = Math.max(0, config.getInt("cooldown-seconds", 300));
+        disasterConfig.damagePerSecond = Math.max(0, config.getDouble("damage-per-second", 1.0));
+        disasterConfig.radius = Math.max(1.0, config.getDouble("radius", 50.0));
+        
+        // 只有配置中明确设置了allowed-weathers才覆盖默认值
+        if (config.isList("allowed-weathers")) {
+            disasterConfig.allowedWeathers = config.getStringList("allowed-weathers");
+        }
+        if (config.isList("allowed-biomes")) {
+            disasterConfig.allowedBiomes = config.getStringList("allowed-biomes");
+        }
+        
         disasterConfig.nightOnly = config.getBoolean("night-only", false);
-        disasterConfig.startCommands = config.getStringList("start-commands");
-        disasterConfig.tickCommands = config.getStringList("tick-commands");
-        disasterConfig.endCommands = config.getStringList("end-commands");
+        
+        if (config.isList("start-commands")) {
+            disasterConfig.startCommands = config.getStringList("start-commands");
+        }
+        if (config.isList("tick-commands")) {
+            disasterConfig.tickCommands = config.getStringList("tick-commands");
+        }
+        if (config.isList("end-commands")) {
+            disasterConfig.endCommands = config.getStringList("end-commands");
+        }
+        
         disasterConfig.warningMessage = config.getString("warning-message", "");
         
         return disasterConfig;

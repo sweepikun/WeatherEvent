@@ -1,6 +1,7 @@
 package cn.popcraft.weatherevent.listeners;
 
 import cn.popcraft.weatherevent.WeatherEvent;
+import cn.popcraft.weatherevent.api.WeatherEventAPIImpl;
 import org.bukkit.ChatColor;
 import org.bukkit.World;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -27,6 +28,14 @@ public class WeatherListener implements Listener {
         FileConfiguration config = plugin.getConfig();
         World world = event.getWorld();
         boolean isRaining = event.toWeatherState();
+        boolean wasRaining = world.hasStorm();
+        
+        // 触发API事件 - 不限制主世界
+        if (plugin.getAPI() instanceof WeatherEventAPIImpl) {
+            String oldWeather = world.isThundering() ? "thunder" : (wasRaining ? "rain" : "clear");
+            String newWeather = isRaining ? "rain" : "clear";
+            ((WeatherEventAPIImpl) plugin.getAPI()).fireWeatherChange(world, oldWeather, newWeather);
+        }
         
         // 检查是否只监听主世界
         if (config.getBoolean("main-world-only", true)) {
@@ -35,8 +44,6 @@ public class WeatherListener implements Listener {
                 return;
             }
         }
-        
-        // 不再需要显式通知效果管理器，因为它现在自己监听事件
         
         // 检查是否启用了天气变化通知
         if (config.getBoolean("notify-weather-changes", true)) {
@@ -61,6 +68,14 @@ public class WeatherListener implements Listener {
         FileConfiguration config = plugin.getConfig();
         World world = event.getWorld();
         boolean isThundering = event.toThunderState();
+        boolean wasThundering = world.isThundering();
+        
+        // 触发API事件 - 不限制主世界
+        if (plugin.getAPI() instanceof WeatherEventAPIImpl) {
+            String oldWeather = wasThundering ? "thunder" : (world.hasStorm() ? "rain" : "clear");
+            String newWeather = isThundering ? "thunder" : (world.hasStorm() ? "rain" : "clear");
+            ((WeatherEventAPIImpl) plugin.getAPI()).fireWeatherChange(world, oldWeather, newWeather);
+        }
         
         // 检查是否只监听主世界
         if (config.getBoolean("main-world-only", true)) {
@@ -69,8 +84,6 @@ public class WeatherListener implements Listener {
                 return;
             }
         }
-        
-        // 不再需要显式通知效果管理器，因为它现在自己监听事件
         
         // 检查是否启用了天气变化通知
         if (config.getBoolean("notify-weather-changes", true)) {

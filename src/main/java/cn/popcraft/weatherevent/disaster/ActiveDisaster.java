@@ -88,7 +88,7 @@ public class ActiveDisaster {
             Bukkit.dispatchCommand(Bukkit.getConsoleSender(), processedCommand);
         }
         
-        // 发送警告消息
+        // 发送警告消息给受影响区域内的玩家
         if (!config.getWarningMessage().isEmpty()) {
             String message = type.getColor() + config.getWarningMessage();
             for (Player player : getAffectedPlayers()) {
@@ -157,10 +157,22 @@ public class ActiveDisaster {
         // 将实体拉向中心
         for (LivingEntity entity : getAffectedEntities()) {
             Location entityLoc = entity.getLocation();
-            Vector direction = center.toVector().subtract(entityLoc.toVector()).normalize();
+            Vector toCenter = center.toVector().subtract(entityLoc.toVector());
+            
+            // 防止normalize零向量异常
+            if (toCenter.lengthSquared() < 0.0001) {
+                continue; // 玩家在中心，不施加力
+            }
+            
+            Vector direction = toCenter.normalize();
             Vector velocity = direction.multiply(0.5);
             velocity.setY(0.3); // 向上拉
-            entity.setVelocity(velocity);
+            
+            try {
+                entity.setVelocity(velocity);
+            } catch (IllegalArgumentException e) {
+                // 忽略无效速度
+            }
         }
         
         // 生成粒子效果
@@ -176,12 +188,20 @@ public class ActiveDisaster {
      * 应用洪水效果
      */
     private void applyFloodEffects() {
-        // 这里可以实现水位上升逻辑
-        // 由于Minecraft限制，我们通过命令模拟
-        if (tickCount % 20 == 0) {
-            String waterCommand = "execute at @a[distance=.." + (int)config.getRadius() + 
-                    "] run fill ~-2 ~ ~-2 ~2 ~ ~2 water keep";
-            // 注意：这个命令可能需要根据实际情况调整
+        // 生成水粒子效果
+        if (tickCount % 5 == 0) {
+            String particleCommand = "particle minecraft:splash " + 
+                    center.getX() + " " + (center.getY() + 1) + " " + center.getZ() + 
+                    " " + (config.getRadius() / 2) + " 2 " + (config.getRadius() / 2) + 
+                    " 0.5 50 force";
+            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), particleCommand);
+        }
+        
+        // 给附近玩家添加缓慢和挖掘疲劳效果（模拟水中行动）
+        for (Player player : getAffectedPlayers()) {
+            String effectCommand = "effect give " + player.getName() + 
+                    " minecraft:slowness 3 1 true";
+            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), effectCommand);
         }
     }
     
@@ -321,6 +341,10 @@ public class ActiveDisaster {
      * 应用结束效果
      */
     public void applyEndEffects() {
+        // 通过DisasterManager中的调用逻辑，此方法只会被调用一次
+        // 但为安全起见，仍然标记为已结束
+        ended = true;
+        
         // 执行结束命令
         for (String command : config.getEndCommands()) {
             String processedCommand = command
@@ -337,16 +361,33 @@ public class ActiveDisaster {
         // 发送结束消息
         String message = "§a[灾害结束] " + type.getColor() + type.getDisplayName() + 
                         "§a 已经结束！";
-        for (Player player : world.getPlayers()) {
+        for (Player player : getWorldPlayers()) {
             player.sendMessage(message);
         }
     }
     
     /**
-     * 获取受影响的玩家
+     * 获取受影响的玩家（基于半径限制）
      * @return 受影响的玩家列表
      */
     private List<Player> getAffectedPlayers() {
+        List<Player> affectedPlayers = new java.util.ArrayList<>();
+        double radiusSq = config.getRadius() * config.getRadius();
+        
+        for (Player player : world.getPlayers()) {
+            if (player.getLocation().distanceSquared(center) <= radiusSq) {
+                affectedPlayers.add(player);
+            }
+        }
+        
+        return affectedPlayers;
+    }
+    
+    /**
+     * 获取世界所有玩家（用于开始/结束通知）
+     * @return 世界所有玩家列表
+     */
+    private List<Player> getWorldPlayers() {
         return world.getPlayers();
     }
     

@@ -9,6 +9,7 @@ import org.bukkit.potion.PotionEffectType;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 季节配置类
@@ -57,22 +58,24 @@ public class SeasonConfig {
         
         seasonConfig.enabled = config.getBoolean("enabled", true);
         
-        // 加载药水效果
-        List<?> potionList = config.getList("potion-effects");
-        if (potionList != null) {
-            for (Object obj : potionList) {
-                if (obj instanceof ConfigurationSection) {
-                    ConfigurationSection potionSection = (ConfigurationSection) obj;
-                    String type = potionSection.getString("type");
-                    Object levelObj = potionSection.get("level");
-                    Object durationObj = potionSection.get("duration");
-                    
-                    PotionEffectType effectType = PotionEffectType.getByName(type);
-                    if (effectType != null) {
-                        int level = DynamicParameter.parseIntParameter(levelObj);
-                        int duration = DynamicParameter.parseIntParameter(durationObj);
-                        seasonConfig.potionEffects.add(new PotionEffect(effectType, duration, level));
-                    }
+        // 加载药水效果 - 支持Map列表格式（YAML列表项通常是Map，而不是ConfigurationSection）
+        List<Map<?, ?>> potionMaps = config.getMapList("potion-effects");
+        if (potionMaps != null && !potionMaps.isEmpty()) {
+            for (Map<?, ?> potionMap : potionMaps) {
+                Object typeObj = potionMap.get("type");
+                if (typeObj == null) continue;
+                
+                String type = typeObj.toString();
+                Object levelObj = potionMap.get("level");
+                Object durationObj = potionMap.get("duration");
+                
+                PotionEffectType effectType = PotionEffectType.getByName(type);
+                if (effectType != null) {
+                    int level = DynamicParameter.parseIntParameter(levelObj);
+                    int duration = DynamicParameter.parseIntParameter(durationObj);
+                    // 确保duration至少为1 tick
+                    if (duration < 1) duration = 200;
+                    seasonConfig.potionEffects.add(new PotionEffect(effectType, duration, level));
                 }
             }
         }

@@ -1,6 +1,7 @@
 package cn.popcraft.weatherevent.season;
 
 import cn.popcraft.weatherevent.WeatherEvent;
+import cn.popcraft.weatherevent.api.WeatherEventAPIImpl;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
@@ -8,9 +9,9 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.scheduler.BukkitTask;
 
 import java.time.LocalDate;
-import java.time.Month;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -28,8 +29,8 @@ public class SeasonManager implements Listener {
     private boolean enabled;
     private SeasonMode mode;
     private int seasonDurationDays; // 游戏内时间模式下，每个季节的天数
-    private boolean useRealTime;
     private int realTimeMonthOffset; // 真实时间月份偏移
+    private boolean broadcastSeasonChange; // 是否广播季节变化
     
     // 当前季节（每个世界独立）
     private final Map<String, Season> worldSeasons;
@@ -40,19 +41,29 @@ public class SeasonManager implements Listener {
     // 游戏内时间追踪
     private final Map<String, Long> worldDayCounters;
     
+    // 玩家上次应用药水效果的时间（防止频繁刷新）
+    private final Map<String, Long> playerLastEffectTime;
+    
+    // 更新任务
+    private BukkitTask updateTask;
+    
+    // 应用效果的最小间隔（毫秒）
+    private static final long MIN_EFFECT_INTERVAL_MS = 30000; // 30秒
+    
     public SeasonManager(WeatherEvent plugin) {
         this.plugin = plugin;
         this.logger = plugin.getLogger();
         this.worldSeasons = new HashMap<>();
         this.seasonConfigs = new HashMap<>();
         this.worldDayCounters = new HashMap<>();
+        this.playerLastEffectTime = new HashMap<>();
         
         // 默认配置
         this.enabled = false;
         this.mode = SeasonMode.REAL_TIME;
         this.seasonDurationDays = 30;
-        this.useRealTime = true;
         this.realTimeMonthOffset = 0;
+        this.broadcastSeasonChange = true;
     }
     
     /**
@@ -60,8 +71,12 @@ public class SeasonManager implements Listener {
      * @param config 配置部分
      */
     public void loadFromConfig(ConfigurationSection config) {
+        // 先停止旧的更新任务
+        stopUpdateTask();
+        
         if (config == null) {
             logger.warning("季节系统配置为空，使用默认配置");
+            this.enabled = false;
             return;
         }
         
@@ -76,9 +91,9 @@ public class SeasonManager implements Listener {
         this.mode = SeasonMode.fromString(modeStr);
         
         // 加载其他配置
-        this.seasonDurationDays = config.getInt("season-duration-days", 30);
-        this.useRealTime = config.getBoolean("use-real-time", true);
+        this.seasonDurationDays = Math.max(1, config.getInt("season-duration-days", 30));
         this.realTimeMonthOffset = config.getInt("real-time-month-offset", 0);
+        this.broadcastSeasonChange = config.getBoolean("broadcast-season-change", true);
         
         // 加载季节效果配置
         loadSeasonConfigs(config.getConfigurationSection("effects"));
@@ -120,13 +135,44 @@ public class SeasonManager implements Listener {
     private void initializeWorldSeasons() {
         worldSeasons.clear();
         worldDayCounters.clear();
+        playerLastEffectTime.clear();
         
         for (World world : Bukkit.getWorlds()) {
-            updateWorldSeason(world);
-            worldDayCounters.put(world.getName(), 0L);
+            // 初始化天数计数器
+            if (mode == SeasonMode.GAME_TIME) {
+                worldDayCounters.put(world.getName(), world.getFullTime() / 24000);
+            } else {
+                worldDayCounters.put(world.getName(), 0L);
+            }
+            
+            // 计算并设置初始季节（不触发变化事件）
+            Season season = calculateSeason(world);
+            worldSeasons.put(world.getName(), season);
         }
         
         logger.info("已初始化 " + worldSeasons.size() + " 个世界的季节");
+    }
+    
+    /**
+     * 计算世界的当前季节（不触发事件）
+     * @param world 世界
+     * @return 季节
+     */
+    private Season calculateSeason(World world) {
+        if (mode == SeasonMode.REAL_TIME) {
+            // 真实时间模式：根据当前月份计算季节
+            LocalDate now = LocalDate.now();
+            int month = now.getMonthValue();
+            // 应用月份偏移
+            month = ((month - 1 + realTimeMonthOffset) % 12 + 12) % 12 + 1;
+            return Season.fromMonth(month);
+        } else {
+            // 游戏内时间模式：根据游戏天数计算季节
+            long dayCounter = worldDayCounters.getOrDefault(world.getName(), 0L);
+            int seasonIndex = (int) ((dayCounter / seasonDurationDays) % 4);
+            if (seasonIndex < 0) seasonIndex += 4;
+            return Season.values()[seasonIndex];
+        }
     }
     
     /**
@@ -135,27 +181,15 @@ public class SeasonManager implements Listener {
      */
     private void updateWorldSeason(World world) {
         String worldName = world.getName();
-        Season newSeason;
+        Season newSeason = calculateSeason(world);
+        Season oldSeason = worldSeasons.get(worldName);
         
-        if (mode == SeasonMode.REAL_TIME) {
-            // 真实时间模式：根据当前月份计算季节
-            LocalDate now = LocalDate.now();
-            int month = now.getMonthValue();
-            // 应用月份偏移
-            month = ((month - 1 + realTimeMonthOffset) % 12) + 1;
-            newSeason = Season.fromMonth(month);
-        } else {
-            // 游戏内时间模式：根据游戏天数计算季节
-            long dayCounter = worldDayCounters.getOrDefault(worldName, 0L);
-            int seasonIndex = (int) ((dayCounter / seasonDurationDays) % 4);
-            newSeason = Season.values()[seasonIndex];
-        }
-        
-        Season oldSeason = worldSeasons.put(worldName, newSeason);
-        
-        // 如果季节变化，触发事件
-        if (oldSeason != newSeason && oldSeason != null) {
-            onSeasonChange(world, oldSeason, newSeason);
+        // 只有季节真正变化时才更新和触发事件
+        if (oldSeason != newSeason) {
+            worldSeasons.put(worldName, newSeason);
+            if (oldSeason != null) {
+                onSeasonChange(world, oldSeason, newSeason);
+            }
         }
     }
     
@@ -170,29 +204,39 @@ public class SeasonManager implements Listener {
                    " 变为 " + newSeason.getDisplayName());
         
         // 广播季节变化消息
-        String message = "§6[天气系统] " + world.getName() + " 进入了 " + 
-                        newSeason.getColor() + newSeason.getDisplayName() + "§6！";
-        
-        if (plugin.getConfig().getBoolean("seasons.broadcast-season-change", true)) {
+        if (broadcastSeasonChange) {
+            String message = "§6[天气系统] " + world.getName() + " 进入了 " + 
+                            newSeason.getColor() + newSeason.getDisplayName() + "§6！";
             for (Player player : world.getPlayers()) {
                 player.sendMessage(message);
             }
         }
         
-        // 应用季节效果
+        // 应用季节效果（清除上次效果时间记录，让玩家立即收到效果）
+        for (Player player : world.getPlayers()) {
+            playerLastEffectTime.remove(player.getUniqueId().toString());
+        }
         applySeasonEffects(world, newSeason);
         
-        // 兼容其他插件：触发自定义事件
+        // 兼容其他插件：触发Bukkit自定义事件
         SeasonChangeEvent event = new SeasonChangeEvent(world, oldSeason, newSeason);
         Bukkit.getPluginManager().callEvent(event);
+        
+        // 触发API事件
+        if (plugin.getAPI() instanceof WeatherEventAPIImpl) {
+            ((WeatherEventAPIImpl) plugin.getAPI()).fireSeasonChange(world, oldSeason, newSeason);
+        }
     }
     
     /**
      * 启动季节更新任务
      */
     private void startSeasonUpdateTask() {
-        // 每秒检查一次季节变化
-        Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+        stopUpdateTask();
+        
+        // 每分钟检查一次季节变化（季节变化是缓慢的）
+        // 同时定期应用季节效果给玩家（带间隔限制防止重复应用）
+        updateTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             for (World world : Bukkit.getWorlds()) {
                 // 更新游戏内天数计数器
                 if (mode == SeasonMode.GAME_TIME) {
@@ -204,12 +248,28 @@ public class SeasonManager implements Listener {
                 
                 // 更新世界季节
                 updateWorldSeason(world);
+                
+                // 定期应用季节效果（避免药水效果过期）
+                Season season = worldSeasons.get(world.getName());
+                if (season != null) {
+                    applySeasonEffectsWithInterval(world, season);
+                }
             }
-        }, 20L, 20L); // 每秒更新一次
+        }, 100L, 1200L); // 每分钟更新一次
     }
     
     /**
-     * 应用季节效果
+     * 停止更新任务
+     */
+    private void stopUpdateTask() {
+        if (updateTask != null) {
+            updateTask.cancel();
+            updateTask = null;
+        }
+    }
+    
+    /**
+     * 应用季节效果（不限制间隔）
      * @param world 世界
      * @param season 季节
      */
@@ -222,6 +282,31 @@ public class SeasonManager implements Listener {
         // 对世界中的每个玩家应用效果
         for (Player player : world.getPlayers()) {
             config.applyEffects(player, world);
+            playerLastEffectTime.put(player.getUniqueId().toString(), System.currentTimeMillis());
+        }
+    }
+    
+    /**
+     * 带间隔限制的季节效果应用
+     * @param world 世界
+     * @param season 季节
+     */
+    private void applySeasonEffectsWithInterval(World world, Season season) {
+        SeasonConfig config = seasonConfigs.get(season);
+        if (config == null || !config.isEnabled()) {
+            return;
+        }
+        
+        long now = System.currentTimeMillis();
+        
+        for (Player player : world.getPlayers()) {
+            String playerId = player.getUniqueId().toString();
+            Long lastTime = playerLastEffectTime.get(playerId);
+            
+            if (lastTime == null || (now - lastTime) >= MIN_EFFECT_INTERVAL_MS) {
+                config.applyEffects(player, world);
+                playerLastEffectTime.put(playerId, now);
+            }
         }
     }
     

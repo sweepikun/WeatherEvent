@@ -52,8 +52,12 @@ public class WeatherForecastManager {
      * @param config 配置部分
      */
     public void loadFromConfig(ConfigurationSection config) {
+        // 先停止旧的更新任务
+        stopUpdateTask();
+        
         if (config == null) {
             logger.warning("天气预报系统配置为空，使用默认配置");
+            this.enabled = false;
             return;
         }
         
@@ -64,9 +68,9 @@ public class WeatherForecastManager {
         }
         
         // 加载配置
-        this.forecastDays = config.getInt("forecast-days", 3);
-        this.updateIntervalTicks = config.getInt("update-interval-ticks", 1200);
-        this.baseAccuracy = config.getDouble("base-accuracy", 0.8);
+        this.forecastDays = Math.max(1, Math.min(14, config.getInt("forecast-days", 3)));
+        this.updateIntervalTicks = Math.max(20, config.getInt("update-interval-ticks", 1200));
+        this.baseAccuracy = Math.max(0.1, Math.min(1.0, config.getDouble("base-accuracy", 0.8)));
         
         // 启动更新任务
         startUpdateTask();
@@ -75,12 +79,20 @@ public class WeatherForecastManager {
     }
     
     /**
+     * 停止更新任务（但不清除缓存）
+     */
+    private void stopUpdateTask() {
+        if (updateTask != null) {
+            updateTask.cancel();
+            updateTask = null;
+        }
+    }
+    
+    /**
      * 启动更新任务
      */
     private void startUpdateTask() {
-        if (updateTask != null) {
-            updateTask.cancel();
-        }
+        stopUpdateTask();
         
         updateTask = plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {
             for (World world : plugin.getServer().getWorlds()) {
@@ -114,18 +126,27 @@ public class WeatherForecastManager {
             world.hasStorm(), world.isThundering()
         );
         
-        // 生成未来几天的预报
+        // 生成未来几天的预报 - 使用连续的马尔可夫链
+        WeatherType previousWeather = currentWeather;
         for (int day = 1; day <= forecastDays; day++) {
             long forecastTime = currentTime + (day * ticksPerDay);
             
-            // 基于当前天气和随机因素生成预报
-            WeatherType predictedWeather = predictWeather(currentWeather, day);
+            // 基于前一天的天气预测下一天
+            WeatherType predictedWeather = predictNextWeather(previousWeather);
+            previousWeather = predictedWeather;
             
             // 计算可信度（越远越不准确）
-            double confidence = baseAccuracy * Math.pow(0.9, day);
+            double confidence = Math.max(0.1, baseAccuracy * Math.pow(0.85, day - 1));
             
             // 时间描述
-            String timeDescription = "第 " + day + " 天后";
+            String timeDescription;
+            if (day == 1) {
+                timeDescription = "明天";
+            } else if (day == 2) {
+                timeDescription = "后天";
+            } else {
+                timeDescription = day + " 天后";
+            }
             
             ForecastEntry entry = new ForecastEntry(
                 predictedWeather, forecastTime, confidence, timeDescription
@@ -138,30 +159,31 @@ public class WeatherForecastManager {
     }
     
     /**
-     * 预测天气
+     * 基于当前天气预测下一天天气（马尔可夫链）
      * @param currentWeather 当前天气
-     * @param daysAhead 提前几天
      * @return 预测的天气
      */
-    private WeatherType predictWeather(WeatherType currentWeather, int daysAhead) {
-        // 简单的马尔可夫链模拟
+    private WeatherType predictNextWeather(WeatherType currentWeather) {
         double rand = random.nextDouble();
         
-        // 天气转换概率矩阵
+        // 天气转换概率矩阵 - 基于真实气象规律
         switch (currentWeather) {
             case CLEAR:
+                // 晴天 -> 60%晴天, 30%雨天, 10%雷暴
                 if (rand < 0.6) return WeatherType.CLEAR;
-                if (rand < 0.85) return WeatherType.RAIN;
+                if (rand < 0.9) return WeatherType.RAIN;
                 return WeatherType.THUNDER;
                 
             case RAIN:
-                if (rand < 0.3) return WeatherType.CLEAR;
-                if (rand < 0.8) return WeatherType.RAIN;
+                // 雨天 -> 35%晴天, 50%雨天, 15%雷暴
+                if (rand < 0.35) return WeatherType.CLEAR;
+                if (rand < 0.85) return WeatherType.RAIN;
                 return WeatherType.THUNDER;
                 
             case THUNDER:
-                if (rand < 0.2) return WeatherType.CLEAR;
-                if (rand < 0.7) return WeatherType.RAIN;
+                // 雷暴 -> 25%晴天, 55%雨天, 20%雷暴
+                if (rand < 0.25) return WeatherType.CLEAR;
+                if (rand < 0.80) return WeatherType.RAIN;
                 return WeatherType.THUNDER;
                 
             default:

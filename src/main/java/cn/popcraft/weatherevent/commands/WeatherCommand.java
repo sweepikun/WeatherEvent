@@ -318,7 +318,8 @@ public class WeatherCommand implements CommandExecutor, TabCompleter {
             return true;
         }
         
-        World world = getTargetWorld(sender);
+        // 季节命令不限制只在主世界使用
+        World world = getTargetWorld(sender, false);
         if (world == null) {
             return true;
         }
@@ -381,7 +382,8 @@ public class WeatherCommand implements CommandExecutor, TabCompleter {
             return true;
         }
         
-        World world = getTargetWorld(sender);
+        // 灾害命令不限制只在主世界使用
+        World world = getTargetWorld(sender, false);
         if (world == null) {
             return true;
         }
@@ -467,7 +469,8 @@ public class WeatherCommand implements CommandExecutor, TabCompleter {
             return true;
         }
         
-        World world = getTargetWorld(sender);
+        // 预报命令不限制只在主世界使用
+        World world = getTargetWorld(sender, false);
         if (world == null) {
             return true;
         }
@@ -485,6 +488,10 @@ public class WeatherCommand implements CommandExecutor, TabCompleter {
     }
 
     private World getTargetWorld(CommandSender sender) {
+        return getTargetWorld(sender, true);
+    }
+    
+    private World getTargetWorld(CommandSender sender, boolean enforceMainWorld) {
         World world;
         
         if (sender instanceof Player) {
@@ -499,8 +506,8 @@ public class WeatherCommand implements CommandExecutor, TabCompleter {
             }
         }
         
-        // 检查是否只在主世界应用
-        if (plugin.getConfig().getBoolean("main-world-only", true)) {
+        // 检查是否只在主世界应用（季节、灾害、预报命令不受此限制）
+        if (enforceMainWorld && plugin.getConfig().getBoolean("main-world-only", true)) {
             String mainWorldName = plugin.getConfig().getString("main-world-name", "world");
             if (!world.getName().equals(mainWorldName)) {
                 sender.sendMessage(ChatColor.RED + "此命令只能在主世界使用！");

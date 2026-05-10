@@ -1,6 +1,7 @@
 package cn.popcraft.weatherevent.disaster;
 
 import cn.popcraft.weatherevent.WeatherEvent;
+import cn.popcraft.weatherevent.api.WeatherEventAPIImpl;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -9,6 +10,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.weather.WeatherChangeEvent;
+import org.bukkit.scheduler.BukkitTask;
 
 import java.util.*;
 import java.util.logging.Logger;
@@ -37,12 +39,19 @@ public class DisasterManager implements Listener {
     // 灾害冷却
     private final Map<String, Long> disasterCooldowns;
     
+    // 随机数生成器
+    private final Random random;
+    
+    // 更新任务
+    private BukkitTask updateTask;
+    
     public DisasterManager(WeatherEvent plugin) {
         this.plugin = plugin;
         this.logger = plugin.getLogger();
         this.disasterConfigs = new HashMap<>();
         this.activeDisasters = new HashMap<>();
         this.disasterCooldowns = new HashMap<>();
+        this.random = new Random();
         
         // 默认配置
         this.enabled = false;
@@ -56,8 +65,12 @@ public class DisasterManager implements Listener {
      * @param config 配置部分
      */
     public void loadFromConfig(ConfigurationSection config) {
+        // 先停止旧的更新任务（避免任务堆积）
+        stopUpdateTask();
+        
         if (config == null) {
             logger.warning("灾害系统配置为空，使用默认配置");
+            this.enabled = false;
             return;
         }
         
@@ -79,6 +92,16 @@ public class DisasterManager implements Listener {
         startDisasterUpdateTask();
         
         logger.info("灾害系统已启用，共加载 " + disasterConfigs.size() + " 种灾害");
+    }
+    
+    /**
+     * 停止更新任务
+     */
+    private void stopUpdateTask() {
+        if (updateTask != null) {
+            updateTask.cancel();
+            updateTask = null;
+        }
     }
     
     /**
@@ -108,7 +131,7 @@ public class DisasterManager implements Listener {
      */
     private void startDisasterUpdateTask() {
         // 每秒检查一次灾害
-        Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+        updateTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             if (!enabled) return;
             
             // 检查活跃灾害
@@ -141,6 +164,13 @@ public class DisasterManager implements Listener {
                 
                 // 移除灾害
                 iterator.remove();
+                
+                // 触发API事件
+                if (plugin.getAPI() instanceof WeatherEventAPIImpl) {
+                    ((WeatherEventAPIImpl) plugin.getAPI()).fireDisasterEnd(
+                        disaster.getWorld(), disaster.getType()
+                    );
+                }
                 
                 logger.info(disaster.getType().getDisplayName() + " 在 " + 
                           disaster.getWorld().getName() + " 结束");
@@ -193,15 +223,30 @@ public class DisasterManager implements Listener {
      * @return 是否可以触发
      */
     private boolean canTriggerDisaster(World world, DisasterType type, DisasterConfig config) {
-        // 检查天气条件
-        String weatherType = getCurrentWeatherType(world);
-        if (!config.getAllowedWeathers().contains(weatherType)) {
-            return false;
+        // 检查天气条件 - 如果allowed-weathers为空，允许所有天气
+        List<String> allowedWeathers = config.getAllowedWeathers();
+        if (allowedWeathers != null && !allowedWeathers.isEmpty()) {
+            String weatherType = getCurrentWeatherType(world);
+            if (!allowedWeathers.contains(weatherType)) {
+                return false;
+            }
         }
         
-        // 检查生物群系条件
-        if (!config.getAllowedBiomes().isEmpty()) {
-            // 这里可以添加生物群系检查逻辑
+        // 检查生物群系条件 - 至少有一个玩家在允许的生物群系中
+        List<String> allowedBiomes = config.getAllowedBiomes();
+        if (allowedBiomes != null && !allowedBiomes.isEmpty()) {
+            boolean foundBiome = false;
+            for (Player player : world.getPlayers()) {
+                String biomeName = player.getLocation().getBlock().getBiome().name().toLowerCase();
+                for (String allowed : allowedBiomes) {
+                    if (biomeName.equalsIgnoreCase(allowed)) {
+                        foundBiome = true;
+                        break;
+                    }
+                }
+                if (foundBiome) break;
+            }
+            if (!foundBiome) return false;
         }
         
         // 检查时间条件
@@ -223,7 +268,7 @@ public class DisasterManager implements Listener {
         List<Player> players = world.getPlayers();
         if (players.isEmpty()) return;
         
-        Player targetPlayer = players.get(new Random().nextInt(players.size()));
+        Player targetPlayer = players.get(random.nextInt(players.size()));
         Location center = targetPlayer.getLocation();
         
         // 创建活跃灾害
@@ -240,6 +285,11 @@ public class DisasterManager implements Listener {
             for (Player player : world.getPlayers()) {
                 player.sendMessage(message);
             }
+        }
+        
+        // 触发API事件
+        if (plugin.getAPI() instanceof WeatherEventAPIImpl) {
+            ((WeatherEventAPIImpl) plugin.getAPI()).fireDisasterStart(world, type);
         }
         
         logger.info(type.getDisplayName() + " 在 " + world.getName() + " 触发");
@@ -348,6 +398,14 @@ public class DisasterManager implements Listener {
         ActiveDisaster disaster = activeDisasters.remove(world.getName());
         if (disaster != null) {
             disaster.applyEndEffects();
+            
+            // 触发API事件
+            if (plugin.getAPI() instanceof WeatherEventAPIImpl) {
+                ((WeatherEventAPIImpl) plugin.getAPI()).fireDisasterEnd(
+                    world, disaster.getType()
+                );
+            }
+            
             return true;
         }
         return false;
